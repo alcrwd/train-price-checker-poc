@@ -1,4 +1,5 @@
 const { chromium } = require("playwright");
+const { findMatchingTrips } = require("./compare-matching-trips");
 
 function buildSjUrl(fromStation, toStation, date) {
   const fromUrl = encodeURIComponent(fromStation);
@@ -130,6 +131,11 @@ function cheapestAvailable(trips) {
   const nykopingCheapest = cheapestAvailable(nykopingResult.trips);
   const stockholmCheapest = cheapestAvailable(stockholmResult.trips);
 
+  const matchingTrips = findMatchingTrips(
+    nykopingResult.trips,
+    stockholmResult.trips
+  );
+
   console.log("=================================");
   console.log("Malmö → Nyköping");
   console.log("=================================");
@@ -152,6 +158,11 @@ function cheapestAvailable(trips) {
         ? stockholmCheapest.price - nykopingCheapest.price
         : null,
   });
+
+  console.log("=================================");
+  console.log("MATCHANDE RESOR");
+  console.log("=================================");
+  console.log(JSON.stringify(matchingTrips, null, 2));
 
   await context.storageState({
     path: "sj-storage-state.json",
