@@ -1,0 +1,26 @@
+name: Run price check
+
+on:
+  workflow_dispatch:
+    inputs:
+      travel_date:
+        description: "Travel date (YYYY-MM-DD)"
+        required: true
+        default: "2026-07-15"
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      - run: node compare-destinations.js ${{ github.event.inputs.travel_date }}

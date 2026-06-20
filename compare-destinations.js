@@ -99,7 +99,7 @@ function cheapestAvailable(trips) {
   console.log(`Resedatum: ${travelDate}`);
 
   const browser = await chromium.launch({
-    headless: false,
+    headless: process.env.CI === "true",
   });
 
   let context;
