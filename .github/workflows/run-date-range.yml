@@ -1,0 +1,38 @@
+name: Run date range scan
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: "Start date (YYYY-MM-DD)"
+        required: true
+        default: "2026-07-15"
+      end_date:
+        description: "End date (YYYY-MM-DD)"
+        required: true
+        default: "2026-07-17"
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      - run: node scan-date-range.js ${{ github.event.inputs.start_date }} ${{ github.event.inputs.end_date }}
+
+      - name: Upload date range result artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: date-range-results
+          path: |
+            date-range-result.json
+            date-range-summary.csv
