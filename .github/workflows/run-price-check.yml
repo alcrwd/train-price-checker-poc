@@ -24,3 +24,9 @@ jobs:
       - run: npx playwright install --with-deps chromium
 
       - run: node compare-destinations.js ${{ github.event.inputs.travel_date }}
+
+      - name: Upload result artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: price-check-result
+          path: price-check-result.json

@@ -1,4 +1,5 @@
 const { chromium } = require("playwright");
+const fs = require("fs");
 const { findMatchingTrips } = require("./compare-matching-trips");
 
 function buildSjUrl(fromStation, toStation, date) {
@@ -163,6 +164,22 @@ function cheapestAvailable(trips) {
   console.log("MATCHANDE RESOR");
   console.log("=================================");
   console.log(JSON.stringify(matchingTrips, null, 2));
+
+  const output = {
+    date: travelDate,
+    nykopingResult,
+    stockholmResult,
+    nykopingCheapest,
+    stockholmCheapest,
+    matchingTrips,
+  };
+
+  fs.writeFileSync(
+    "price-check-result.json",
+    JSON.stringify(output, null, 2)
+  );
+
+  console.log("Resultat sparat till price-check-result.json");
 
   await context.storageState({
     path: "sj-storage-state.json",
