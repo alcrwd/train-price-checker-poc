@@ -42,6 +42,28 @@ async function handleCookies(page) {
 async function waitForTripPrices(page) {
   await page.waitForSelector("text=Avgår", { timeout: 15000 });
 
+  let previousScrollY = -1;
+  let samePositionCount = 0;
+
+  for (let i = 0; i < 30; i++) {
+    await page.mouse.wheel(0, 1000);
+    await page.waitForTimeout(500);
+
+    const scrollY = await page.evaluate(() => window.scrollY);
+
+    if (scrollY === previousScrollY) {
+      samePositionCount += 1;
+    } else {
+      samePositionCount = 0;
+    }
+
+    previousScrollY = scrollY;
+
+    if (samePositionCount >= 2) {
+      break;
+    }
+  }
+
   await page.waitForFunction(() => {
     const text = document.body.innerText;
 
@@ -49,7 +71,7 @@ async function waitForTripPrices(page) {
       !text.includes("Hämtar pris") &&
       !text.includes("Hämtar reseklasser")
     );
-  }, { timeout: 15000 });
+  }, { timeout: 20000 });
 
   await page.waitForTimeout(500);
 }
