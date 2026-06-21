@@ -31,4 +31,5 @@ jobs:
           name: sj-network-debug
           path: |
             sj-network-debug.json
+            sj-network-departures-with-changes.json
             sj-network-debug.png
