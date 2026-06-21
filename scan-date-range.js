@@ -88,10 +88,12 @@ function parseTrips(text) {
     const block = match[7];
 
     const operatorMatch = block.match(
-      /(SJ Snabbtåg, X 2000 \+ Mälartåg|Snälltåget \+ Mälartåg|SJ Snabbtåg, X 2000|Snälltåget|Mälartåg)/
+      /(SJ Snabbtåg, X 2000 \+ Mälartåg|Snälltåget \+ Mälartåg|SJ Nattåg \+ Mälartåg|SJ Snabbtåg, X 2000|SJ Nattåg|Snälltåget|Mälartåg)/
     );
 
-    const classes = [...block.matchAll(/(2 klass Lugn|2 klass|1 klass)/g)].map(
+    const trainNumberMatch = block.match(/tåg\s+(\d+)/i);
+
+    const classes = [...block.matchAll(/(Sittplats|Liggplats|Sovplats|2 klass Lugn|2 klass|1 klass)/g)].map(
       (m) => m[1]
     );
 
@@ -104,6 +106,7 @@ function parseTrips(text) {
       durationMinutes: parseInt(match[5], 10),
       changes: parseInt(match[6], 10),
       operator: operatorMatch ? operatorMatch[1] : null,
+      trainNumber: trainNumberMatch ? trainNumberMatch[1] : null,
       classes: [...new Set(classes)],
     });
   }
@@ -162,10 +165,13 @@ function toCsvValue(value) {
 function writeCsv(rows, path) {
   const headers = [
     "date",
-    "bestSaving",
-    "bestSavingDeparture",
-    "bestSavingOperatorA",
-    "bestSavingOperatorB",
+    "bestTrueSaving",
+    "bestTrueSavingDeparture",
+    "trainNumber",
+    "directPrice",
+    "stockholmPrice",
+    "norrkopingToNykopingPrice",
+    "alternativePrice",
     "nykopingCheapestPrice",
     "nykopingCheapestDeparture",
     "stockholmCheapestPrice",
@@ -236,17 +242,26 @@ async function main() {
       stockholmResult.trips
     );
 
-    const bestSaving =
+    const bestTrueSaving =
       matchingTrips
-        .filter((trip) => trip.savings > 0)
-        .sort((a, b) => b.savings - a.savings)[0] || null;
+        .filter((trip) => trip.trueSavings > 0)
+        .sort((a, b) => b.trueSavings - a.trueSavings)[0] || null;
 
     const summary = {
       date,
-      bestSaving: bestSaving ? bestSaving.savings : null,
-      bestSavingDeparture: bestSaving ? bestSaving.departureA : null,
-      bestSavingOperatorA: bestSaving ? bestSaving.operatorA : null,
-      bestSavingOperatorB: bestSaving ? bestSaving.operatorB : null,
+      bestTrueSaving: bestTrueSaving ? bestTrueSaving.trueSavings : null,
+      bestTrueSavingDeparture: bestTrueSaving
+        ? bestTrueSaving.departureA
+        : null,
+      trainNumber: bestTrueSaving ? bestTrueSaving.trainNumberA : null,
+      directPrice: bestTrueSaving ? bestTrueSaving.directPrice : null,
+      stockholmPrice: bestTrueSaving ? bestTrueSaving.stockholmPrice : null,
+      norrkopingToNykopingPrice: bestTrueSaving
+        ? bestTrueSaving.norrkopingToNykopingPrice
+        : null,
+      alternativePrice: bestTrueSaving
+        ? bestTrueSaving.alternativePrice
+        : null,
       nykopingCheapestPrice: nykopingCheapest ? nykopingCheapest.price : null,
       nykopingCheapestDeparture: nykopingCheapest
         ? nykopingCheapest.departure
@@ -272,15 +287,15 @@ async function main() {
       nykopingCheapest,
       stockholmCheapest,
       matchingTrips,
-      bestSaving,
+      bestTrueSaving,
     });
 
     console.log(summary);
   }
 
-  const sortedByBestSaving = [...allResults].sort((a, b) => {
-    const savingA = a.summary.bestSaving ?? -Infinity;
-    const savingB = b.summary.bestSaving ?? -Infinity;
+  const sortedByBestTrueSaving = [...allResults].sort((a, b) => {
+    const savingA = a.summary.bestTrueSaving ?? -Infinity;
+    const savingB = b.summary.bestTrueSaving ?? -Infinity;
     return savingB - savingA;
   });
 
@@ -291,9 +306,10 @@ async function main() {
     fromStation,
     directDestination: "Nyköping Central",
     alternativeDestination: "Stockholm Central",
+    assumedNorrkopingToNykopingPrice: 98,
     results: allResults,
-    topSavings: sortedByBestSaving
-      .filter((result) => result.summary.bestSaving !== null)
+    topSavings: sortedByBestTrueSaving
+      .filter((result) => result.summary.bestTrueSaving !== null)
       .slice(0, 20)
       .map((result) => result.summary),
   };
@@ -306,7 +322,7 @@ async function main() {
   );
 
   console.log("=================================");
-  console.log("TOPP BESPARINGAR");
+  console.log("TOPP VERKLIGA BESPARINGAR");
   console.log("=================================");
   console.log(JSON.stringify(output.topSavings, null, 2));
 
