@@ -27,6 +27,28 @@ async function handleCookies(page) {
 async function waitForTripPrices(page) {
   await page.waitForSelector("text=Avgår", { timeout: 15000 });
 
+  let previousScrollY = -1;
+  let samePositionCount = 0;
+
+  for (let i = 0; i < 30; i++) {
+    await page.mouse.wheel(0, 1000);
+    await page.waitForTimeout(500);
+
+    const scrollY = await page.evaluate(() => window.scrollY);
+
+    if (scrollY === previousScrollY) {
+      samePositionCount += 1;
+    } else {
+      samePositionCount = 0;
+    }
+
+    previousScrollY = scrollY;
+
+    if (samePositionCount >= 2) {
+      break;
+    }
+  }
+
   await page.waitForFunction(() => {
     const text = document.body.innerText;
 
@@ -34,7 +56,7 @@ async function waitForTripPrices(page) {
       !text.includes("Hämtar pris") &&
       !text.includes("Hämtar reseklasser")
     );
-  }, { timeout: 15000 });
+  }, { timeout: 20000 });
 
   await page.waitForTimeout(500);
 }
@@ -51,10 +73,12 @@ function parseTrips(text) {
     const block = match[7];
 
     const operatorMatch = block.match(
-      /(SJ Snabbtåg, X 2000 \+ Mälartåg|Snälltåget \+ Mälartåg|SJ Snabbtåg, X 2000|Snälltåget|Mälartåg)/
+      /(SJ Snabbtåg, X 2000 \+ Mälartåg|Snälltåget \+ Mälartåg|SJ Nattåg \+ Mälartåg|SJ Snabbtåg, X 2000|SJ Nattåg|Snälltåget|Mälartåg)/
     );
 
-    const classes = [...block.matchAll(/(2 klass Lugn|2 klass|1 klass)/g)].map(
+    const trainNumberMatch = block.match(/tåg\s+(\d+)/i);
+
+    const classes = [...block.matchAll(/(Sittplats|Liggplats|Sovplats|2 klass Lugn|2 klass|1 klass)/g)].map(
       (m) => m[1]
     );
 
@@ -67,6 +91,7 @@ function parseTrips(text) {
       durationMinutes: parseInt(match[5], 10),
       changes: parseInt(match[6], 10),
       operator: operatorMatch ? operatorMatch[1] : null,
+      trainNumber: trainNumberMatch ? trainNumberMatch[1] : null,
       classes: [...new Set(classes)],
     });
   }
@@ -175,12 +200,13 @@ function cheapestAvailable(trips) {
   });
 
   console.log("=================================");
-  console.log("MATCHANDE RESOR");
+  console.log("MATCHANDE RESOR / VERKLIG BESPARING");
   console.log("=================================");
   console.log(JSON.stringify(matchingTrips, null, 2));
 
   const output = {
     date: travelDate,
+    assumedNorrkopingToNykopingPrice: 98,
     nykopingResult,
     stockholmResult,
     nykopingCheapest,
