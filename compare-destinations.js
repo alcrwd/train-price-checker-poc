@@ -24,6 +24,21 @@ async function handleCookies(page) {
   }
 }
 
+async function waitForTripPrices(page) {
+  await page.waitForSelector("text=Avgår", { timeout: 15000 });
+
+  await page.waitForFunction(() => {
+    const text = document.body.innerText;
+
+    return (
+      !text.includes("Hämtar pris") &&
+      !text.includes("Hämtar reseklasser")
+    );
+  }, { timeout: 15000 });
+
+  await page.waitForTimeout(500);
+}
+
 function parseTrips(text) {
   const trips = [];
 
@@ -69,8 +84,7 @@ async function searchTrips(page, { fromStation, toStation, date }) {
   });
 
   await handleCookies(page);
-
-  await page.waitForTimeout(15000);
+  await waitForTripPrices(page);
 
   const pageUrl = page.url();
   const text = await page.locator("body").innerText();
