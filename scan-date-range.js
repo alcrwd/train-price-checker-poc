@@ -39,6 +39,21 @@ async function handleCookies(page) {
   }
 }
 
+async function waitForTripPrices(page) {
+  await page.waitForSelector("text=Avgår", { timeout: 15000 });
+
+  await page.waitForFunction(() => {
+    const text = document.body.innerText;
+
+    return (
+      !text.includes("Hämtar pris") &&
+      !text.includes("Hämtar reseklasser")
+    );
+  }, { timeout: 15000 });
+
+  await page.waitForTimeout(500);
+}
+
 function parseTrips(text) {
   const trips = [];
 
@@ -74,50 +89,6 @@ function parseTrips(text) {
   return trips;
 }
 
-function minutesSinceMidnight(time) {
-  const [hours, minutes] = time.split(":").map(Number);
-  return hours * 60 + minutes;
-}
-
-function findMatches(destinationA, destinationB, maxDifferenceMinutes = 15) {
-  const matches = [];
-
-  for (const tripA of destinationA) {
-    if (!tripA.price || tripA.soldOut) continue;
-
-    const departureA = minutesSinceMidnight(tripA.departure);
-
-    let bestMatch = null;
-    let bestDiff = Infinity;
-
-    for (const tripB of destinationB) {
-      if (!tripB.price || tripB.soldOut) continue;
-
-      const departureB = minutesSinceMidnight(tripB.departure);
-      const diff = Math.abs(departureA - departureB);
-
-      if (diff <= maxDifferenceMinutes && diff < bestDiff) {
-        bestDiff = diff;
-        bestMatch = tripB;
-      }
-    }
-
-    if (bestMatch) {
-      matches.push({
-        departureA: tripA.departure,
-        departureB: bestMatch.departure,
-        operatorA: tripA.operator,
-        operatorB: bestMatch.operator,
-        priceA: tripA.price,
-        priceB: bestMatch.price,
-        savings: tripA.price - bestMatch.price,
-      });
-    }
-  }
-
-  return matches.sort((a, b) => b.savings - a.savings);
-}
-
 async function searchTrips(page, { fromStation, toStation, date }) {
   const url = buildSjUrl(fromStation, toStation, date);
 
@@ -128,7 +99,7 @@ async function searchTrips(page, { fromStation, toStation, date }) {
   });
 
   await handleCookies(page);
-  await page.waitForTimeout(15000);
+  await waitForTripPrices(page);
 
   const pageUrl = page.url();
   const text = await page.locator("body").innerText();
@@ -238,10 +209,10 @@ async function main() {
     const nykopingCheapest = cheapestAvailable(nykopingResult.trips);
     const stockholmCheapest = cheapestAvailable(stockholmResult.trips);
 
-    const matchingTrips =
-      typeof findMatchingTrips === "function"
-        ? findMatchingTrips(nykopingResult.trips, stockholmResult.trips)
-        : findMatches(nykopingResult.trips, stockholmResult.trips);
+    const matchingTrips = findMatchingTrips(
+      nykopingResult.trips,
+      stockholmResult.trips
+    );
 
     const bestSaving =
       matchingTrips
