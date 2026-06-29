@@ -34,9 +34,12 @@ function buildSjUrl(fromStation, toStation, date) {
     const url = request.url();
 
     if (url.includes("/public/sales/booking/v3/search")) {
+      const headers = request.headers();
+
       findings.searchRequests.push({
         method: request.method(),
         url,
+        headers,
         postData: request.postData(),
       });
 
@@ -44,18 +47,19 @@ function buildSjUrl(fromStation, toStation, date) {
       console.log("SEARCH REQUEST");
       console.log(request.method());
       console.log(url);
+      console.log("HEADERS:");
+      console.log(JSON.stringify(headers, null, 2));
+      console.log("POST DATA:");
       console.log(request.postData());
     }
 
-    if (
-      url.includes("/departures/") &&
-      url.includes("/offers")
-    ) {
+    if (url.includes("/departures/") && url.includes("/offers")) {
       const passengerListIdMatch = url.match(/passengerListId=([^&]+)/);
 
       findings.offerRequests.push({
         method: request.method(),
         url,
+        headers: request.headers(),
         passengerListId: passengerListIdMatch
           ? decodeURIComponent(passengerListIdMatch[1])
           : null,
@@ -92,6 +96,7 @@ function buildSjUrl(fromStation, toStation, date) {
         findings.searchResponses.push({
           status: response.status(),
           url,
+          headers: response.headers(),
           body: json,
         });
 
@@ -104,7 +109,7 @@ function buildSjUrl(fromStation, toStation, date) {
           findings.passengerListIds.push({
             source: "search-response-body",
             url,
-            passengerListId: "FOUND_IN_BODY",
+            passengerListId: json.passengerListId || "FOUND_IN_BODY",
           });
         }
       }
@@ -113,6 +118,7 @@ function buildSjUrl(fromStation, toStation, date) {
         findings.departuresSearchResponses.push({
           status: response.status(),
           url,
+          headers: response.headers(),
           body: json,
         });
 
@@ -195,3 +201,4 @@ function buildSjUrl(fromStation, toStation, date) {
   console.log("Saved research-output.json");
 
   await browser.close();
+})();
