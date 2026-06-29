@@ -63,20 +63,17 @@ Request offers directly for every departureId.
 
 ### passengerListId
 
-Status: 🔍 Under investigation
+Status: ✅ Solved
 
-Known facts:
+Created by:
 
-- Required by the offers endpoint.
-- Appears as a query parameter.
-- Same passengerListId is reused across multiple offer requests during a session.
+POST /public/sales/booking/v3/search
 
-Unknown:
+Returned in response body.
 
-- Which endpoint creates it.
-- Whether it is tied to a booking session.
-- Whether it expires.
-- Whether it can be reused.
+Used by:
+
+GET /departures/{departureId}/offers?passengerListId=...
 
 ---
 
