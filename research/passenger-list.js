@@ -195,4 +195,3 @@ function buildSjUrl(fromStation, toStation, date) {
   console.log("Saved research-output.json");
 
   await browser.close();
-})();
