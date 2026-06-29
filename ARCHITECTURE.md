@@ -1,91 +1,95 @@
-# Architecture
-## Purpose
-This project compares train ticket strategies.
-The main question is:
-Can it be cheaper to buy a Malmö → Stockholm ticket, get off in Norrköping, and continue with a separate Norrköping → Nyköping ticket, compared with buying Malmö → Nyköping directly?
-## Version 1
-Version 1 proved the idea by reading SJ's rendered website.
-It used:
-- Playwright
-- page text parsing
-- regex
-- scrolling to trigger lazy-loaded prices
-- matching by departure time
-Version 1 should be kept as a working reference, but not expanded further.
-## Version 2
-Version 2 should use SJ's API responses as the source of truth.
-The goal is to avoid:
-- HTML parsing
-- regex against page text
-- scroll-based loading logic
-- UI text such as "Hämtar pris"
-Instead, the project should use structured JSON from SJ's API.
-## Core principle
-SJ JSON should only be handled in the API layer.
-The rest of the project should work with our own internal object:
-```js
-Trip
+Train Price Checker – Architecture
 
-A Trip represents one complete travel option in our own format.
+Purpose
 
-Proposed structure
+This project investigates whether it can be cheaper to buy a train ticket from Malmö → Stockholm, leave the train in Norrköping, and continue with a separate ticket from Norrköping → Nyköping, instead of buying a direct ticket from Malmö → Nyköping.
 
-src/
-  api/
-    sjApi.js
-    tripMapper.js
-  services/
-    offerService.js
-    matchService.js
-    analysisService.js
-scan-date-range-api.js
+The project started as a proof of concept based on parsing SJ’s website. After exploring SJ’s internal API, the long-term goal is to base all analysis on structured API responses instead of rendered HTML.
 
-Module responsibilities
+⸻
+
+Architecture Overview
+
+                SJ API
+                   │
+                   ▼
+             src/api/sjApi.js
+                   │
+                   ▼
+          src/api/tripMapper.js
+                   │
+             Trip objects
+                   │
+      ┌────────────┼────────────┐
+      ▼            ▼            ▼
+ offerService  matchService  analysisService
+      │            │            │
+      └────────────┼────────────┘
+                   ▼
+         scan-date-range-api.js
+
+⸻
+
+Design Principles
+
+1. One source of truth
+
+Version 2 should use SJ’s API as the only source of truth.
+
+Avoid:
+
+* HTML parsing
+* Regular expressions on page text
+* Scroll-dependent loading
+* UI text such as “Hämtar pris”
+
+Instead, use structured JSON returned by SJ.
+
+⸻
+
+2. One responsibility per module
+
+Each module should have a single, clearly defined responsibility.
 
 src/api/sjApi.js
 
-Responsible for communication with SJ.
+Responsible for communicating with SJ.
 
-It should:
+Responsibilities:
 
-* open/search SJ routes
-* capture or fetch departures/search
-* capture or fetch offers
-* return raw SJ JSON
+* Request departures
+* Request offers
+* Return raw SJ JSON
 
-No business logic should live here.
+No business logic.
+
+⸻
 
 src/api/tripMapper.js
 
-Responsible for converting raw SJ JSON into Trip objects.
+Converts SJ’s JSON into the project’s internal model.
 
-This should be the only place that knows about SJ fields such as:
+This is the only file that should know about fields such as:
 
 departure.legs[0].serviceName
-departure.legs[0].arrivalDateTime
 departure.legs[1].departureDateTime
+departure.departureDateTime
 
-Everything outside this file should use our own fields:
+Everything else should work with the project’s own model.
 
-trip.firstLeg.trainNumber
-trip.firstLeg.arrival
-trip.secondLeg.departure
+⸻
 
 src/services/offerService.js
 
-Responsible for attaching prices to trips.
+Attaches ticket prices to each Trip.
 
-It should read SJ offer data and map the cheapest relevant available price to the correct Trip.
+⸻
 
 src/services/matchService.js
 
-Responsible for matching comparable trips.
+Matches trips representing the same physical train.
 
-For the main strategy, matching should primarily use the first leg train number:
-
-Malmö → Nyköping first leg train number
-matches
-Malmö → Stockholm train number
+Primary matching should use the first-leg train number.
 
 Example:
 
@@ -94,23 +98,30 @@ Example:
 528 ↔ 528
 530 ↔ 530
 
+⸻
+
 src/services/analysisService.js
 
-Responsible for calculating:
+Calculates:
 
-* direct price
-* alternative price
-* saving
-* travel time
-* waiting time in Norrköping
-* connection quality
+* Savings
+* Travel time
+* Waiting time
+* Connection quality
+* Statistics
 
-Trip object
+⸻
 
-A Trip should look roughly like this:
+Internal Data Model
+
+The rest of the project should never work directly with SJ’s JSON.
+
+Instead, every journey should be represented as a Trip.
+
+Example:
 
 {
-  id: "69bb0260-41ae-3765-85c0-7ef14d612151",
+  id: "...",
   from: "Malmö Central",
   to: "Nyköping Central",
   departure: "05:07",
@@ -132,78 +143,123 @@ A Trip should look roughly like this:
     departure: "08:30",
     arrival: "09:14",
     trainNumber: "224",
-    operator: "Mälartåg",
-    brand: null
+    operator: "Mälartåg"
   },
   changeMinutes: 14,
   routeType: "via-norrkoping"
 }
 
-Route types
+⸻
 
-The scanner should classify trips.
+Route Classification
+
+Every Trip should be classified.
 
 via-norrkoping
 
-Relevant for the main strategy.
+The primary strategy.
 
-Rules:
+Requirements:
 
-trip.firstLeg.to === "Norrköping Central"
-trip.secondLeg.from === "Norrköping Central"
+* First leg ends in Norrköping.
+* Second leg starts in Norrköping.
+
+These trips are included in the main analysis.
+
+⸻
 
 via-stockholm
 
-Not part of the main strategy for now.
+Trips changing trains in Stockholm.
 
-These trips should be excluded from the main savings analysis unless we explicitly build a separate strategy later.
+These are currently excluded from the primary savings analysis.
+
+⸻
 
 other
 
-Any trip that does not match the expected strategy.
+Any route not matching one of the above categories.
 
-Main analysis strategy
+⸻
 
-For each direct Malmö → Nyköping trip via Norrköping:
+Main Strategy
 
-1. Read first leg train number.
-2. Find Malmö → Stockholm trip with the same train number.
+For each Trip travelling via Norrköping:
+
+1. Read the first-leg train number.
+2. Find the Malmö → Stockholm trip using the same train number.
 3. Compare:
 
-Malmö → Nyköping direct price
+Direct Malmö → Nyköping price
 vs
 Malmö → Stockholm price
 +
 Norrköping → Nyköping price
 
-For now, Norrköping → Nyköping can use an assumed fixed price.
+Initially, the Norrköping → Nyköping ticket can use a fixed price.
 
-Later, this should be replaced with actual price data if available.
+Later versions should retrieve the actual ticket price.
 
-Important discovery
+⸻
 
-SJ’s rendered web page does not always show train numbers for combined Malmö → Nyköping trips.
+Development Strategy
 
-However, the API does show them in legs.
+Version 1
 
-Example:
+Purpose:
 
-departure.legs[0].serviceName // "522"
-departure.legs[1].serviceName // "224"
+* Prove the concept.
 
-This is why Version 2 should use the API rather than the rendered page text.
+Characteristics:
 
-Development rules
+* Playwright
+* HTML parsing
+* Regex
+* Page scrolling
+* Departure-time matching
 
-1. Keep Version 1 as a reference.
-2. Do not add more major logic to the text parser.
-3. Build Version 2 beside Version 1.
-4. Keep SJ-specific JSON handling inside src/api.
-5. Let all other modules work with Trip.
-6. Prefer small testable steps over large rewrites.
+Version 1 should remain in the repository as a working reference.
 
-After that, commit with:
-```bash
-git add ARCHITECTURE.md
-git commit -m "Document API architecture"
-git push origin main
+⸻
+
+Version 2
+
+Purpose:
+
+Build a clean, modular architecture based entirely on SJ’s API.
+
+Goals:
+
+* Structured JSON
+* Internal Trip model
+* Exact train-number matching
+* Better maintainability
+* Easier testing
+* Easier future expansion
+
+⸻
+
+Development Rules
+
+1. Keep Version 1 unchanged except for bug fixes.
+2. Build Version 2 beside Version 1.
+3. Keep all SJ-specific logic inside the API layer.
+4. Use Trip objects everywhere else.
+5. Keep modules small and testable.
+6. Prefer many small verified steps over large rewrites.
+
+⸻
+
+Future Possibilities
+
+Once the API-based architecture is complete, the same foundation can support:
+
+* Other destination pairs
+* Alternative route strategies
+* Real Mälartåg ticket prices
+* Delay analysis
+* Connection risk analysis
+* Historical price analysis
+* Statistical reporting
+
+The long-term goal is to build a reusable train journey analysis engine rather than a single-purpose scraper.
