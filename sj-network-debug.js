@@ -1,126 +1,34 @@
-const { chromium } = require("playwright");
-const fs = require("fs");
+name: Debug SJ network
 
-function buildSjUrl(fromStation, toStation, date) {
-  return `https://www.sj.se/sok-resa/valj-resa/${encodeURIComponent(
-    fromStation
-  )}/${encodeURIComponent(toStation)}/${date}`;
-}
+on:
+  workflow_dispatch:
+    inputs:
+      travel_date:
+        description: "Travel date (YYYY-MM-DD)"
+        required: true
+        default: "2026-07-15"
 
-(async () => {
-  const date = process.argv[2] || "2026-07-15";
+jobs:
+  run:
+    runs-on: ubuntu-latest
 
-  const browser = await chromium.launch({
-    headless: true,
-  });
+    steps:
+      - uses: actions/checkout@v4
 
-  const page = await browser.newPage({
-    viewport: {
-      width: 1440,
-      height: 1200,
-    },
-  });
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
 
-  const offerRequests = [];
-  const departuresSearchResponses = [];
+      - run: npm ci
 
-  page.on("response", async (response) => {
-    const responseUrl = response.url();
-    const contentType = response.headers()["content-type"] || "";
+      - run: npx playwright install --with-deps chromium
 
-    if (!contentType.includes("application/json")) return;
+      - run: node sj-network-debug.js ${{ github.event.inputs.travel_date }}
 
-    try {
-      if (responseUrl.includes("/departures/search/")) {
-        const json = await response.json();
-
-        departuresSearchResponses.push({
-          url: responseUrl,
-          status: response.status(),
-          travelCount: json.travels?.length || 0,
-          departureCount: (json.travels || []).reduce(
-            (sum, travel) => sum + (travel.departures?.length || 0),
-            0
-          ),
-        });
-      }
-
-      if (
-        responseUrl.includes("/departures/") &&
-        responseUrl.includes("/offers")
-      ) {
-        const request = response.request();
-
-        let json = null;
-
-        try {
-          json = await response.json();
-        } catch {
-          // Ignore.
-        }
-
-        const item = {
-          url: responseUrl,
-          status: response.status(),
-          method: request.method(),
-          requestHeaders: request.headers(),
-          postData: request.postData(),
-          responseDepartureId: json?.departureId || null,
-          responseSample: json ? JSON.stringify(json).slice(0, 3000) : null,
-        };
-
-        offerRequests.push(item);
-
-        console.log("================================");
-        console.log("OFFERS REQUEST");
-        console.log("URL:");
-        console.log(item.url);
-        console.log("METHOD:");
-        console.log(item.method);
-        console.log("POST DATA:");
-        console.log(item.postData);
-        console.log("RESPONSE DEPARTURE ID:");
-        console.log(item.responseDepartureId);
-        console.log("================================");
-      }
-    } catch (error) {
-      console.error("Could not inspect JSON response:", error);
-    }
-  });
-
-  const url = buildSjUrl("Malmö Central", "Nyköping Central", date);
-
-  console.log(`Öppnar: ${url}`);
-
-  await page.goto(url, {
-    waitUntil: "domcontentloaded",
-  });
-
-  await page.waitForTimeout(25000);
-
-  await page.screenshot({
-    path: "sj-network-debug.png",
-    fullPage: true,
-  });
-
-  const output = {
-    date,
-    departuresSearchResponses,
-    offerRequests,
-  };
-
-  fs.writeFileSync(
-    "sj-network-offers-debug.json",
-    JSON.stringify(output, null, 2)
-  );
-
-  console.log("================================");
-  console.log("SUMMARY");
-  console.log("================================");
-  console.log(`departures/search responses: ${departuresSearchResponses.length}`);
-  console.log(`offers requests: ${offerRequests.length}`);
-  console.log("Sparat till sj-network-offers-debug.json");
-  console.log("Screenshot sparad till sj-network-debug.png");
-
-  await browser.close();
-})();
+      - name: Upload debug files
+        uses: actions/upload-artifact@v4
+        with:
+          name: sj-network-debug
+          path: |
+            sj-network-offers-debug.json
+            sj-network-debug.png
