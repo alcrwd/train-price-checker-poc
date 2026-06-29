@@ -1,4 +1,4 @@
-name: Debug SJ screenshot
+name: Debug SJ network
 
 on:
   workflow_dispatch:
@@ -9,26 +9,33 @@ on:
         default: "2026-07-15"
 
 jobs:
-  run:
+  debug:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 24
 
-      - run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-      - run: npx playwright install --with-deps chromium
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
 
-      - run: node debug-sj-screenshot.js ${{ github.event.inputs.travel_date }}
+      - name: Run network debug
+        run: |
+          node sj-network-debug.js ${{ github.event.inputs.travel_date }}
 
-      - name: Upload debug files
+      - name: Upload debug artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: sj-desktop-debug
+          name: sj-network-debug
           path: |
-            desktop-sj-debug.png
-            desktop-sj-debug.txt
+            sj-network-offers-debug.json
+            sj-network-debug.png
+          if-no-files-found: error
