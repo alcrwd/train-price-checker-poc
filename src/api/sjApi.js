@@ -6,7 +6,7 @@ function buildSjUrl(fromStation, toStation, date) {
   )}/${encodeURIComponent(toStation)}/${date}`;
 }
 
-async function fetchDepartures({ fromStation, toStation, date }) {
+async function fetchDeparturesWithOffers({ fromStation, toStation, date }) {
   const browser = await chromium.launch({
     headless: process.env.CI === "true",
   });
@@ -19,19 +19,33 @@ async function fetchDepartures({ fromStation, toStation, date }) {
   });
 
   const departuresSearchResponses = [];
+  const offersByDepartureId = {};
 
   page.on("response", async (response) => {
     const responseUrl = response.url();
     const contentType = response.headers()["content-type"] || "";
 
-    if (!responseUrl.includes("/departures/search/")) return;
     if (!contentType.includes("application/json")) return;
 
     try {
       const json = await response.json();
-      departuresSearchResponses.push(json);
+
+      if (responseUrl.includes("/departures/search/")) {
+        departuresSearchResponses.push(json);
+      }
+
+      if (
+        responseUrl.includes("/departures/") &&
+        responseUrl.includes("/offers")
+      ) {
+        const departureId = json.departureId;
+
+        if (departureId) {
+          offersByDepartureId[departureId] = json;
+        }
+      }
     } catch (error) {
-      console.error("Could not parse departures/search JSON:", error);
+      console.error("Could not parse SJ JSON response:", error);
     }
   });
 
@@ -55,9 +69,23 @@ async function fetchDepartures({ fromStation, toStation, date }) {
     }
   }
 
+  return {
+    departures,
+    offersByDepartureId,
+  };
+}
+
+async function fetchDepartures({ fromStation, toStation, date }) {
+  const { departures } = await fetchDeparturesWithOffers({
+    fromStation,
+    toStation,
+    date,
+  });
+
   return departures;
 }
 
 module.exports = {
   fetchDepartures,
+  fetchDeparturesWithOffers,
 };
