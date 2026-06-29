@@ -21,8 +21,8 @@ function buildSjUrl(fromStation, toStation, date) {
     },
   });
 
-  const allRelevantResponses = [];
-  const departuresWithChanges = [];
+  const offerRequests = [];
+  const departuresSearchResponses = [];
 
   page.on("response", async (response) => {
     const responseUrl = response.url();
@@ -31,65 +31,60 @@ function buildSjUrl(fromStation, toStation, date) {
     if (!contentType.includes("application/json")) return;
 
     try {
-      const json = await response.json();
-      const text = JSON.stringify(json);
+      if (responseUrl.includes("/departures/search/")) {
+        const json = await response.json();
 
-      if (
-        text.includes("Norrköping") ||
-        text.includes("Nyköping") ||
-        text.includes("Malmö") ||
-        text.includes("Stockholm") ||
-        text.includes("serviceName") ||
-        text.includes("legs")
-      ) {
-        allRelevantResponses.push({
+        departuresSearchResponses.push({
           url: responseUrl,
           status: response.status(),
-          size: text.length,
-          sample: text.slice(0, 3000),
+          travelCount: json.travels?.length || 0,
+          departureCount: (json.travels || []).reduce(
+            (sum, travel) => sum + (travel.departures?.length || 0),
+            0
+          ),
         });
       }
 
-      if (responseUrl.includes("/departures/search/")) {
-        const travels = json.travels || [];
+      if (
+        responseUrl.includes("/departures/") &&
+        responseUrl.includes("/offers")
+      ) {
+        const request = response.request();
 
-        for (const travel of travels) {
-          for (const departure of travel.departures || []) {
-            if ((departure.numberOfChanges || 0) > 0) {
-              departuresWithChanges.push({
-                departureId: departure.departureId,
-                departureDateTime: departure.departureDateTime,
-                arrivalDateTime: departure.arrivalDateTime,
-                duration: departure.duration,
-                numberOfChanges: departure.numberOfChanges,
-                producer: departure.producer,
-                numberOfOperators: departure.numberOfOperators,
-                legs: (departure.legs || []).map((leg) => ({
-                  origin: leg.origin,
-                  destination: leg.destination,
-                  departureDateTime: leg.departureDateTime,
-                  arrivalDateTime: leg.arrivalDateTime,
-                  duration: leg.duration,
-                  changeTime: leg.changeTime,
-                  serviceName: leg.serviceName,
-                  publicServiceName: leg.publicServiceName,
-                  secondaryServiceName: leg.secondaryServiceName,
-                  serviceType: leg.serviceType,
-                  transportMethod: leg.transportMethod,
-                  transportMethodDescription: leg.transportMethodDescription,
-                  vehicle: leg.vehicle,
-                  nightTrain: leg.nightTrain,
-                  serviceBrandName: leg.serviceBrandName,
-                  serviceBrandNameDescription: leg.serviceBrandNameDescription,
-                  producer: leg.producer,
-                })),
-              });
-            }
-          }
+        let json = null;
+
+        try {
+          json = await response.json();
+        } catch {
+          // Ignore.
         }
+
+        const item = {
+          url: responseUrl,
+          status: response.status(),
+          method: request.method(),
+          requestHeaders: request.headers(),
+          postData: request.postData(),
+          responseDepartureId: json?.departureId || null,
+          responseSample: json ? JSON.stringify(json).slice(0, 3000) : null,
+        };
+
+        offerRequests.push(item);
+
+        console.log("================================");
+        console.log("OFFERS REQUEST");
+        console.log("URL:");
+        console.log(item.url);
+        console.log("METHOD:");
+        console.log(item.method);
+        console.log("POST DATA:");
+        console.log(item.postData);
+        console.log("RESPONSE DEPARTURE ID:");
+        console.log(item.responseDepartureId);
+        console.log("================================");
       }
-    } catch {
-      // Ignore JSON parse failures.
+    } catch (error) {
+      console.error("Could not inspect JSON response:", error);
     }
   });
 
@@ -101,36 +96,31 @@ function buildSjUrl(fromStation, toStation, date) {
     waitUntil: "domcontentloaded",
   });
 
-  await page.waitForTimeout(15000);
+  await page.waitForTimeout(25000);
 
   await page.screenshot({
     path: "sj-network-debug.png",
     fullPage: true,
   });
 
-  fs.writeFileSync(
-    "sj-network-debug.json",
-    JSON.stringify(allRelevantResponses, null, 2)
-  );
+  const output = {
+    date,
+    departuresSearchResponses,
+    offerRequests,
+  };
 
   fs.writeFileSync(
-    "sj-network-departures-with-changes.json",
-    JSON.stringify(departuresWithChanges, null, 2)
+    "sj-network-offers-debug.json",
+    JSON.stringify(output, null, 2)
   );
 
-  console.log(`Antal relevanta JSON-svar: ${allRelevantResponses.length}`);
-  console.log(`Antal resor med byte: ${departuresWithChanges.length}`);
-
-  console.log("Sparat till sj-network-debug.json");
-  console.log("Sparat till sj-network-departures-with-changes.json");
+  console.log("================================");
+  console.log("SUMMARY");
+  console.log("================================");
+  console.log(`departures/search responses: ${departuresSearchResponses.length}`);
+  console.log(`offers requests: ${offerRequests.length}`);
+  console.log("Sparat till sj-network-offers-debug.json");
   console.log("Screenshot sparad till sj-network-debug.png");
-
-  if (departuresWithChanges.length > 0) {
-    console.log("=================================");
-    console.log("FÖRSTA RESAN MED BYTE");
-    console.log("=================================");
-    console.log(JSON.stringify(departuresWithChanges[0], null, 2));
-  }
 
   await browser.close();
 })();
