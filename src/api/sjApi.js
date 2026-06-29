@@ -6,6 +6,39 @@ function buildSjUrl(fromStation, toStation, date) {
   )}/${encodeURIComponent(toStation)}/${date}`;
 }
 
+async function waitForOffersToStabilize(page, offersByDepartureId) {
+  const timeoutMs = 30000;
+  const intervalMs = 1000;
+  const requiredStableChecks = 3;
+
+  const start = Date.now();
+
+  let previousCount = -1;
+  let stableChecks = 0;
+
+  while (Date.now() - start < timeoutMs) {
+    const currentCount = Object.keys(offersByDepartureId).length;
+
+    console.log(`Offers captured: ${currentCount}`);
+
+    if (currentCount === previousCount) {
+      stableChecks += 1;
+    } else {
+      stableChecks = 0;
+      previousCount = currentCount;
+    }
+
+    if (stableChecks >= requiredStableChecks) {
+      console.log("Offer count stabilized.");
+      return;
+    }
+
+    await page.waitForTimeout(intervalMs);
+  }
+
+  console.log("Timed out waiting for offers.");
+}
+
 async function fetchDeparturesWithOffers({ fromStation, toStation, date }) {
   const browser = await chromium.launch({
     headless: process.env.CI === "true",
@@ -55,7 +88,7 @@ async function fetchDeparturesWithOffers({ fromStation, toStation, date }) {
     waitUntil: "domcontentloaded",
   });
 
-  await page.waitForTimeout(15000);
+  await waitForOffersToStabilize(page, offersByDepartureId);
 
   await browser.close();
 
