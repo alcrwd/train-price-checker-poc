@@ -2,11 +2,6 @@ name: Debug SJ network
 
 on:
   workflow_dispatch:
-    inputs:
-      travel_date:
-        description: "Travel date (YYYY-MM-DD)"
-        required: true
-        default: "2026-07-15"
 
 jobs:
   debug:
@@ -27,15 +22,12 @@ jobs:
       - name: Install Playwright
         run: npx playwright install --with-deps chromium
 
-      - name: Run network debug
-        run: |
-          node sj-network-debug.js ${{ github.event.inputs.travel_date }}
+      - name: Run passenger list research
+        run: node research/passenger-list.js
 
-      - name: Upload debug artifacts
+      - name: Upload research output
         uses: actions/upload-artifact@v4
         with:
-          name: sj-network-debug
-          path: |
-            sj-network-offers-debug.json
-            sj-network-debug.png
+          name: passenger-list-research
+          path: research-output.json
           if-no-files-found: error
