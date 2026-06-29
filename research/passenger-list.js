@@ -20,62 +20,123 @@ function buildSjUrl(fromStation, toStation, date) {
   });
 
   const findings = {
-    requests: [],
-    responses: [],
-    cookiesBefore: [],
-    cookiesAfter: [],
+    searchRequests: [],
+    searchResponses: [],
+    departuresSearchResponses: [],
+    offerRequests: [],
+    passengerListIds: [],
     localStorage: {},
     sessionStorage: {},
-    passengerListIds: [],
+    cookies: [],
   };
-
-  findings.cookiesBefore = await page.context().cookies();
 
   page.on("request", (request) => {
     const url = request.url();
 
-    findings.requests.push({
-      method: request.method(),
-      url,
-      postData: request.postData(),
-    });
+    if (url.includes("/public/sales/booking/v3/search")) {
+      findings.searchRequests.push({
+        method: request.method(),
+        url,
+        postData: request.postData(),
+      });
 
-    if (url.includes("passengerList")) {
-      console.log("REQUEST CONTAINS passengerList:");
+      console.log("================================");
+      console.log("SEARCH REQUEST");
+      console.log(request.method());
+      console.log(url);
+      console.log(request.postData());
+    }
+
+    if (
+      url.includes("/departures/") &&
+      url.includes("/offers")
+    ) {
+      const passengerListIdMatch = url.match(/passengerListId=([^&]+)/);
+
+      findings.offerRequests.push({
+        method: request.method(),
+        url,
+        passengerListId: passengerListIdMatch
+          ? decodeURIComponent(passengerListIdMatch[1])
+          : null,
+      });
+
+      if (passengerListIdMatch) {
+        findings.passengerListIds.push({
+          source: "offer-request-url",
+          passengerListId: decodeURIComponent(passengerListIdMatch[1]),
+          url,
+        });
+      }
+
+      console.log("================================");
+      console.log("OFFER REQUEST");
+      console.log(request.method());
       console.log(url);
     }
   });
 
   page.on("response", async (response) => {
     const url = response.url();
+    const contentType = response.headers()["content-type"] || "";
 
-    findings.responses.push({
-      status: response.status(),
-      url,
-    });
+    if (!contentType.includes("application/json")) {
+      return;
+    }
 
     try {
-      const contentType = response.headers()["content-type"] || "";
-
-      if (!contentType.includes("application/json")) {
-        return;
-      }
-
       const json = await response.json();
       const text = JSON.stringify(json);
 
-      if (text.includes("passengerListId")) {
-        console.log("FOUND passengerListId IN RESPONSE:");
-        console.log(url);
-
-        findings.passengerListIds.push({
-          url,
+      if (url.includes("/public/sales/booking/v3/search")) {
+        findings.searchResponses.push({
           status: response.status(),
+          url,
           body: json,
         });
+
+        console.log("================================");
+        console.log("SEARCH RESPONSE");
+        console.log(response.status());
+        console.log(url);
+
+        if (text.includes("passengerListId")) {
+          findings.passengerListIds.push({
+            source: "search-response-body",
+            url,
+            passengerListId: "FOUND_IN_BODY",
+          });
+        }
       }
-    } catch {
-      // Ignore responses that cannot be parsed.
+
+      if (url.includes("/public/sales/booking/v3/departures/search/")) {
+        findings.departuresSearchResponses.push({
+          status: response.status(),
+          url,
+          body: json,
+        });
+
+        console.log("================================");
+        console.log("DEPARTURES SEARCH RESPONSE");
+        console.log(response.status());
+        console.log(url);
+        console.log(
+          `Departures: ${(json.travels || []).reduce(
+            (sum, travel) => sum + (travel.departures?.length || 0),
+            0
+          )}`
+        );
+
+        if (text.includes("passengerListId")) {
+          findings.passengerListIds.push({
+            source: "departures-search-response-body",
+            url,
+            passengerListId: "FOUND_IN_BODY",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Could not parse JSON response:", error);
     }
   });
 
@@ -93,7 +154,7 @@ function buildSjUrl(fromStation, toStation, date) {
 
   await page.waitForTimeout(20000);
 
-  findings.cookiesAfter = await page.context().cookies();
+  findings.cookies = await page.context().cookies();
 
   findings.localStorage = await page.evaluate(() => {
     const result = {};
@@ -124,8 +185,12 @@ function buildSjUrl(fromStation, toStation, date) {
 
   console.log("================================");
   console.log("Research complete");
-  console.log(`Requests: ${findings.requests.length}`);
-  console.log(`Responses: ${findings.responses.length}`);
+  console.log(`Search requests: ${findings.searchRequests.length}`);
+  console.log(`Search responses: ${findings.searchResponses.length}`);
+  console.log(
+    `Departures search responses: ${findings.departuresSearchResponses.length}`
+  );
+  console.log(`Offer requests: ${findings.offerRequests.length}`);
   console.log(`PassengerListIds found: ${findings.passengerListIds.length}`);
   console.log("Saved research-output.json");
 
