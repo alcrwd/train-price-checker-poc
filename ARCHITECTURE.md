@@ -1,5 +1,3 @@
-Ja. Skapa filen ARCHITECTURE.md och klistra in detta:
-
 # Architecture
 ## Purpose
 This project compares train ticket strategies.
