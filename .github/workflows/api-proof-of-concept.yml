@@ -1,0 +1,33 @@
+name: API Proof of Concept
+
+on:
+  workflow_dispatch:
+    inputs:
+      travel_date:
+        description: "Travel date (YYYY-MM-DD)"
+        required: true
+        default: "2026-07-15"
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      - run: node api-proof-of-concept.js ${{ github.event.inputs.travel_date }}
+
+      - name: Upload API proof files
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-proof-of-concept
+          path: |
+            api-proof-of-concept-result.json
