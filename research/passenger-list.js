@@ -37,10 +37,11 @@ function buildSjUrl(fromStation, toStation, date) {
     findings.requests.push({
       method: request.method(),
       url,
+      postData: request.postData(),
     });
 
     if (url.includes("passengerList")) {
-      console.log("REQUEST:");
+      console.log("REQUEST CONTAINS passengerList:");
       console.log(url);
     }
   });
@@ -64,11 +65,12 @@ function buildSjUrl(fromStation, toStation, date) {
       const text = JSON.stringify(json);
 
       if (text.includes("passengerListId")) {
-        console.log("FOUND passengerListId");
+        console.log("FOUND passengerListId IN RESPONSE:");
         console.log(url);
 
         findings.passengerListIds.push({
           url,
+          status: response.status(),
           body: json,
         });
       }
@@ -86,17 +88,17 @@ function buildSjUrl(fromStation, toStation, date) {
   console.log(`Opening ${url}`);
 
   await page.goto(url, {
-    waitUntil: "networkidle",
+    waitUntil: "domcontentloaded",
   });
 
-  await page.waitForTimeout(10000);
+  await page.waitForTimeout(20000);
 
   findings.cookiesAfter = await page.context().cookies();
 
   findings.localStorage = await page.evaluate(() => {
     const result = {};
 
-    for (let i = 0; i < localStorage.length; i++) {
+    for (let i = 0; i < localStorage.length; i += 1) {
       const key = localStorage.key(i);
       result[key] = localStorage.getItem(key);
     }
@@ -107,7 +109,7 @@ function buildSjUrl(fromStation, toStation, date) {
   findings.sessionStorage = await page.evaluate(() => {
     const result = {};
 
-    for (let i = 0; i < sessionStorage.length; i++) {
+    for (let i = 0; i < sessionStorage.length; i += 1) {
       const key = sessionStorage.key(i);
       result[key] = sessionStorage.getItem(key);
     }
@@ -124,9 +126,7 @@ function buildSjUrl(fromStation, toStation, date) {
   console.log("Research complete");
   console.log(`Requests: ${findings.requests.length}`);
   console.log(`Responses: ${findings.responses.length}`);
-  console.log(
-    `PassengerListIds found: ${findings.passengerListIds.length}`
-  );
+  console.log(`PassengerListIds found: ${findings.passengerListIds.length}`);
   console.log("Saved research-output.json");
 
   await browser.close();
