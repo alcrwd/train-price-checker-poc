@@ -1,10 +1,10 @@
-name: Debug SJ network
+name: Passenger List Research
 
 on:
   workflow_dispatch:
 
 jobs:
-  debug:
+  research:
     runs-on: ubuntu-latest
 
     steps:
