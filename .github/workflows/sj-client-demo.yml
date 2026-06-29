@@ -1,1 +1,33 @@
+name: SJ Client Demo
 
+on:
+  workflow_dispatch:
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run SJ client demo
+        run: node scripts/sj-client-demo.js
+
+      - name: Upload demo result
+        uses: actions/upload-artifact@v4
+        with:
+          name: sj-client-demo
+          path: sj-client-demo-result.json
+          if-no-files-found: error
