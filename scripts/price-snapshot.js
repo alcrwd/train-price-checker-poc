@@ -9,6 +9,9 @@ const {
 const {
   compareSnapshots,
 } = require("../src/services/priceComparisonService");
+const {
+  createAlert,
+} = require("../src/services/alertService");
 
 function printComparison(comparison) {
   console.log("");
@@ -48,6 +51,24 @@ function printComparison(comparison) {
       );
     }
   }
+}
+
+function printAlert(alert) {
+  console.log("");
+  console.log("================================");
+  console.log("Alert");
+  console.log("================================");
+
+  if (!alert.hasAlert) {
+    console.log("No alert.");
+    return;
+  }
+
+  console.log(`ALERT: ${alert.title}`);
+  console.log(
+    `${alert.previousPrice} → ${alert.currentPrice} kr`
+  );
+  console.log(`Difference: ${alert.difference} kr`);
 }
 
 async function main() {
@@ -103,6 +124,10 @@ async function main() {
   );
 
   printComparison(comparison);
+
+  const alert = createAlert(comparison);
+
+  printAlert(alert);
 }
 
 main().catch((error) => {
