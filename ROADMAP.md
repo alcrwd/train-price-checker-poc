@@ -4,107 +4,129 @@ Roadmap and long-term vision.
 
 ---
 
-# Project Vision
+# Vision
 
 Build the best tool for finding the cheapest practical train journey.
 
-The project analyses train journeys, ticket prices and booking strategies to recommend the cheapest way to travel between two locations.
+The goal is to help travellers compare train journeys over a chosen date or travel period and easily find the best option.
 
-Price monitoring is only one tool used to achieve this goal.
+The project should always present the complete picture first, allowing users to sort and filter the results according to their own preferences.
 
 ---
 
-# Current Status
+# Current Version
 
-Current version:
+## v2.0.0 — Core Journey Engine
 
-**v2.0.0 — Core Journey Engine**
+Completed
 
-Completed:
-
-- ✅ SJ journey collection
+- ✅ SJ API integration
+- ✅ Journey collection
 - ✅ Journey parsing
 - ✅ Offer extraction
-- ✅ Snapshot generation
+- ✅ Price snapshot generation
 - ✅ Historical snapshot storage
 - ✅ Snapshot comparison
 - ✅ Route configuration
 - ✅ Multi-route support
+- ✅ GitHub Actions automation
 - ✅ Minimal web interface
 
 ---
 
 # Version 3
 
-Focus:
-**Search & Travel Analysis**
+## Goal
 
-The goal of Version 3 is to build the foundation for finding the cheapest practical train journey.
+Version 3 focuses on building a complete journey search experience.
 
-The application should first collect a complete dataset for a search and then allow the user to explore it without performing additional searches.
+The objective is simple:
+
+> Perform one search, build one dataset, and allow the user to explore it without performing additional searches.
 
 ---
 
 ## 3.1 Search
 
-Goal:
-Create a simple but powerful search interface.
+The user should be able to search using:
 
-Tasks
+- Origin
+- Destination
+- Single travel date
+- Date range
 
-- [ ] Search by origin
-- [ ] Search by destination
-- [ ] Search by single date
-- [ ] Search by date range
-
----
-
-## 3.2 Dataset
-
-Goal:
-One search creates one journey dataset.
-
-Tasks
-
-- [ ] Collect all journeys for the search
-- [ ] Store the dataset in memory
-- [ ] Keep the dataset available while the user explores the results
-
-Design principle
-
-> A search creates a dataset.
-> Filters and sorting never require a new search.
+These are the only required fields.
 
 ---
 
-## 3.3 Sorting
+## 3.2 Journey Dataset
 
-Goal:
-Allow the user to change how journeys are presented.
+Every search creates one dataset.
 
-Tasks
+The dataset should contain every matching journey returned from SJ.
 
-- [ ] Sort by price
-- [ ] Sort by departure time
-- [ ] Sort by arrival time
-- [ ] Sort by journey duration
-- [ ] Sort by number of changes
+The dataset remains available while the user explores the results.
+
+Design principle:
+
+> One search creates one dataset.
+>
+> Sorting and filtering never trigger another search.
 
 ---
 
-## 3.4 Filters
+## 3.3 Results
 
-Goal:
-Filter the existing dataset without contacting SJ again.
+Display every journey in the dataset.
 
-Tasks
+Each journey should include:
 
-- [ ] Departure time interval
-- [ ] Arrival time interval
+- Price
+- Travel date
+- Departure time
+- Arrival time
+- Journey duration
+- Number of changes
+- Change station(s)
+- Change duration(s)
+- Train number(s)
 
-The filter panel should be collapsible.
+No journeys should be hidden unless the user chooses to filter them.
 
-Show the number of active filters.
+---
+
+## 3.4 Sorting
+
+Sorting happens locally.
+
+Supported sorting:
+
+- Price
+- Departure time
+- Arrival time
+- Journey duration
+- Number of changes
+
+Changing the sorting order must never contact SJ.
+
+---
+
+## 3.5 Filters
+
+Filters are optional.
+
+The filter panel is collapsed by default.
+
+Initially supported filters:
+
+- Departure time interval
+- Arrival time interval
+
+Changing filters updates the existing dataset instantly.
+
+Changing filters must never contact SJ.
+
+If filters are active, display the number of active filters.
 
 Example:
 
@@ -112,34 +134,109 @@ Filter (2)
 
 ---
 
-## 3.5 Results
+# Version 3 Scope Lock
 
-Goal:
-Present all matching journeys.
+Version 3 intentionally excludes:
 
-Tasks
+- Booking recommendations
+- Split-ticket optimisation
+- Travel score
+- AI features
+- Maximum price
+- Maximum journey duration
+- Direct-train filter
+- Advanced filters
+- Notifications
+- Historical analysis
 
-- [ ] Journey cards
-- [ ] Price
-- [ ] Departure time
-- [ ] Arrival time
-- [ ] Journey duration
-- [ ] Number of changes
-- [ ] Change location
-- [ ] Change duration
-- [ ] Train numbers
-
-The user should always be able to remove filters and immediately see additional journeys without performing another search.
+These features belong to later versions.
 
 ---
 
-## 3.6 Future extensions
+# Version 4
 
-Planned, but intentionally postponed.
+## Travel Analysis
 
-- Maximum price
-- Maximum journey duration
-- Maximum number of changes
-- Direct trains only
-- Split-ticket suggestions
+Once Version 3 is complete, the project moves from search to analysis.
+
+Possible features:
+
+- Cheapest travel day
+- Historical price analysis
+- Compare travel dates
+- Journey statistics
+- Price trends
+
+---
+
+# Version 5
+
+## Booking Optimisation
+
+Future versions may include:
+
 - Booking recommendations
+- Split-ticket analysis
+- Cheapest booking strategy
+- Savings calculations
+- Intelligent recommendations
+
+---
+
+# Design Principles
+
+## Build one layer at a time
+
+Finish one layer before starting the next.
+
+---
+
+## Keep services small
+
+Each service should have one responsibility.
+
+---
+
+## Backend owns business logic
+
+Journey collection, analysis and future recommendations belong in the backend.
+
+The frontend presents the results.
+
+---
+
+## Configuration over hardcoded values
+
+Behaviour should be driven by configuration whenever possible.
+
+---
+
+## Search once
+
+One search creates one dataset.
+
+---
+
+## Filter locally
+
+Sorting and filtering always work on the existing dataset.
+
+---
+
+## Keep the UI simple
+
+The user should only need to provide:
+
+- Origin
+- Destination
+- Travel date or date range
+
+Everything else is optional.
+
+---
+
+## Avoid scope creep
+
+Good ideas are collected for future versions.
+
+Version 3 should remain focused on building the best possible search experience.
