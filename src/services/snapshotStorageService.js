@@ -47,10 +47,7 @@ function getLatestSnapshotPath() {
     return null;
   }
 
-  return path.join(
-    SNAPSHOT_DIRECTORY,
-    snapshots[snapshots.length - 1]
-  );
+  return path.join(SNAPSHOT_DIRECTORY, snapshots[snapshots.length - 1]);
 }
 
 function getPreviousSnapshotPath() {
@@ -60,16 +57,21 @@ function getPreviousSnapshotPath() {
     return null;
   }
 
-  return path.join(
-    SNAPSHOT_DIRECTORY,
-    snapshots[snapshots.length - 2]
-  );
+  return path.join(SNAPSHOT_DIRECTORY, snapshots[snapshots.length - 2]);
 }
 
 function loadSnapshot(filePath) {
-  return JSON.parse(
-    fs.readFileSync(filePath, "utf8")
-  );
+  if (!filePath) return null;
+
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function getLatestSnapshot() {
+  return loadSnapshot(getLatestSnapshotPath());
+}
+
+function getPreviousSnapshot() {
+  return loadSnapshot(getPreviousSnapshotPath());
 }
 
 module.exports = {
@@ -78,4 +80,6 @@ module.exports = {
   listSnapshots,
   getLatestSnapshotPath,
   getPreviousSnapshotPath,
+  getLatestSnapshot,
+  getPreviousSnapshot,
 };
