@@ -1,3 +1,4 @@
+const { getRoutes } = require("../src/config/routes");
 const { getTripsWithPrices } = require("../src/services/journeyService");
 const {
   createPriceSnapshot,
@@ -40,17 +41,6 @@ function printComparison(comparison) {
   console.log(
     `Unchanged trips: ${comparison.summary.unchangedTrips}`
   );
-
-  if (comparison.cheaperTrips.length > 0) {
-    console.log("");
-    console.log("Cheaper trips:");
-
-    for (const trip of comparison.cheaperTrips) {
-      console.log(
-        `${trip.departure} → ${trip.arrival}: ${trip.previousPrice} → ${trip.currentPrice} kr (${trip.difference} kr)`
-      );
-    }
-  }
 }
 
 function printAlert(alert) {
@@ -71,42 +61,39 @@ function printAlert(alert) {
   console.log(`Difference: ${alert.difference} kr`);
 }
 
-async function main() {
-  const fromStation = "Malmö Central";
-  const toStation = "Nyköping Central";
-  const date = process.argv[2] || "2026-07-15";
+async function processRoute(route) {
+  console.log("");
+  console.log("############################################");
+  console.log(route.name);
+  console.log("############################################");
 
   const previousSnapshot = getLatestSnapshot();
 
-  console.log(
-    `Scanning ${fromStation} → ${toStation} (${date})`
-  );
-
   const trips = await getTripsWithPrices({
-    fromStation,
-    toStation,
-    date,
+    fromStation: route.from.name,
+    toStation: route.to.name,
+    date: route.travel.date,
   });
 
-  const currentSnapshot = createPriceSnapshot({
-    fromStation,
-    toStation,
-    date,
+  const snapshot = createPriceSnapshot({
+    fromStation: route.from.name,
+    toStation: route.to.name,
+    date: route.travel.date,
     trips,
   });
 
-  const savedPath = saveSnapshot(currentSnapshot);
+  const savedPath = saveSnapshot(snapshot);
 
   console.log("");
   console.log("================================");
   console.log("Price Snapshot");
   console.log("================================");
-  console.log(`Trips: ${currentSnapshot.numberOfTrips}`);
+  console.log(`Trips: ${snapshot.numberOfTrips}`);
   console.log(
-    `Priced trips: ${currentSnapshot.numberOfPricedTrips}`
+    `Priced trips: ${snapshot.numberOfPricedTrips}`
   );
   console.log(
-    `Lowest price: ${currentSnapshot.lowestPrice ?? "-"}`
+    `Lowest price: ${snapshot.lowestPrice ?? "-"}`
   );
   console.log(`Saved: ${savedPath}`);
 
@@ -120,7 +107,7 @@ async function main() {
 
   const comparison = compareSnapshots(
     previousSnapshot,
-    currentSnapshot
+    snapshot
   );
 
   printComparison(comparison);
@@ -128,6 +115,21 @@ async function main() {
   const alert = createAlert(comparison);
 
   printAlert(alert);
+}
+
+async function main() {
+  const routes = getRoutes().filter(
+    (route) => route.enabled
+  );
+
+  if (routes.length === 0) {
+    console.log("No enabled routes.");
+    return;
+  }
+
+  for (const route of routes) {
+    await processRoute(route);
+  }
 }
 
 main().catch((error) => {
