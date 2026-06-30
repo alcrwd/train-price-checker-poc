@@ -6,47 +6,47 @@ The project follows semantic versioning where possible.
 
 ---
 
-# v2.0.0 — Multi Route Snapshot Engine
+# v2.0.0 — Core Journey Engine
 
 Released: 2026-06-30
 
 ## Added
 
-- SJ API integration
-- Journey service
-- Trip mapping
+- SJ journey collection
+- Journey parsing
 - Offer extraction
 - Price snapshot generation
-- Snapshot storage
+- Historical snapshot storage
 - Snapshot comparison
-- Alert engine (v1)
 - Route configuration
 - Multi-route support
-- Route-specific snapshot history
-- Roadmap documentation
+- Minimal web interface
+- ROADMAP.md
+- CHANGELOG.md
 
 ## Changed
 
-- Snapshot storage is now organized per route.
-- Price snapshot workflow now reads routes from configuration.
-- Alert generation is separated into its own service.
-- Project architecture has been refactored into small services with single responsibilities.
+- Refactored the project into small services with single responsibilities.
+- Snapshot storage is now route-specific.
+- Project architecture now supports future travel analysis and booking optimisation.
 
-## Removed
+## Notes
 
-- Legacy comparison workflow
-- Temporary comparison JSON files
-- Experimental proof-of-concept scripts no longer used
+This release marks the completion of the core data collection engine.
+
+Although the project originally focused on train price monitoring, the long-term vision has evolved into building a travel optimisation platform that helps users find the cheapest practical train journey.
+
+Price monitoring is now considered one component of the overall optimisation process.
 
 ---
 
 # Upcoming
 
-## v3.0
+## Version 3
 
-Planned focus:
+Focus:
 
-- Architecture stabilization
-- Smarter alert rules
-- Automated scheduled scans
-- Notifications
+- Travel period search
+- Price analysis
+- Booking optimisation
+- Travel recommendations
