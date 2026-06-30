@@ -30,9 +30,9 @@ jobs:
       - name: Create price snapshot
         run: node scripts/price-snapshot.js ${{ github.event.inputs.travel_date }}
 
-      - name: Upload price snapshot
+      - name: Upload snapshots
         uses: actions/upload-artifact@v4
         with:
-          name: price-snapshot
-          path: price-snapshot.json
+          name: price-snapshots
+          path: data/snapshots/
           if-no-files-found: error
