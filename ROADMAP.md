@@ -213,3 +213,14 @@ Alert Service
 ```
 
 Each layer has a single responsibility and can evolve independently.
+
+## Definition of Done
+
+A feature is considered complete when:
+
+- [ ] Code is implemented
+- [ ] Feature has been verified
+- [ ] Documentation is updated
+- [ ] ROADMAP is updated if needed
+- [ ] CHANGELOG is updated
+- [ ] Changes are committed
