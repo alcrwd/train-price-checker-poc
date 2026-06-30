@@ -1,4 +1,4 @@
-# SJ Price Watch
+# Best Train Price
 
 Roadmap and long-term vision.
 
@@ -6,16 +6,11 @@ Roadmap and long-term vision.
 
 # Project Vision
 
-Build a reliable and maintainable train price monitoring engine that automatically:
+Build the best tool for finding the cheapest practical train journey.
 
-- monitors one or more train routes
-- stores historical price snapshots
-- detects meaningful price changes
-- generates alerts
-- notifies the user
-- provides long-term price statistics
+The project analyses train journeys, ticket prices and booking strategies to recommend the cheapest way to travel between two locations.
 
-The project is built in small, well-defined iterations where infrastructure comes before features.
+Price monitoring is only one tool used to achieve this goal.
 
 ---
 
@@ -23,204 +18,147 @@ The project is built in small, well-defined iterations where infrastructure come
 
 Current version:
 
-**v2.0 — Multi Route Snapshot Engine**
+**v2.0.0 — Core Journey Engine**
 
 Completed:
 
-- ✅ SJ API integration
-- ✅ Journey service
-- ✅ Trip mapping
+- ✅ SJ journey collection
+- ✅ Journey parsing
 - ✅ Offer extraction
-- ✅ Price snapshot generation
-- ✅ Snapshot storage
+- ✅ Snapshot generation
+- ✅ Historical snapshot storage
 - ✅ Snapshot comparison
-- ✅ Alert engine (v1)
 - ✅ Route configuration
-- ✅ Multi-route architecture
-- ✅ Route-specific snapshot history
+- ✅ Multi-route support
+- ✅ Minimal web interface
 
 ---
 
 # Version 3
 
 Focus:
-**Automation and smarter alerts**
+**Travel Analysis**
 
-## 3.1 Stabilization
+## 3.1 Search Periods
 
 Goal:
-Verify that the current architecture is stable.
+Search journeys across an entire travel period instead of a single date.
 
 Tasks
 
-- [ ] Verify multiple routes
-- [ ] Verify snapshot history
-- [ ] Verify comparisons
-- [ ] Verify alerts
-- [ ] Clean up remaining technical debt
-- [ ] Improve logging
+- [ ] Support start and end dates
+- [ ] Search every day within the period
+- [ ] Store daily results
+- [ ] Compare prices between dates
 
 ---
 
-## 3.2 Alert Engine
+## 3.2 Price Analysis
 
 Goal:
-Make alerts configurable and more useful.
+Identify the best travel dates.
 
 Tasks
 
-- [ ] Alert when lowest price decreases
-- [ ] Alert when price falls below configured limit
-- [ ] Alert on new historical lowest price
-- [ ] Alert when trip price changes by X SEK
-- [ ] Route-specific alert configuration
+- [ ] Cheapest travel day
+- [ ] Cheapest departure
+- [ ] Cheapest arrival
+- [ ] Historical lowest price
+- [ ] Price trends
 
 ---
 
-## 3.3 Automation
+## 3.3 Booking Optimizer
 
 Goal:
-Run the system automatically.
+Recommend the cheapest practical booking.
 
 Tasks
 
-- [ ] Scheduled GitHub workflow
-- [ ] Automatic snapshot generation
-- [ ] Automatic comparisons
-- [ ] Automatic alerts
+- [ ] Compare booking strategies
+- [ ] Compare total travel cost
+- [ ] Recommend best ticket(s)
+- [ ] Recommend which train to board
+- [ ] Calculate savings
 
 ---
 
-## 3.4 Notifications
+## 3.4 Recommendations
 
 Goal:
-Notify the user only when something interesting happens.
+Present clear booking recommendations.
 
 Tasks
 
-- [ ] Console output
-- [ ] Email notifications
-- [ ] Telegram notifications (optional)
-- [ ] Discord notifications (optional)
+- [ ] Best travel option
+- [ ] Best booking strategy
+- [ ] Cheapest practical journey
+- [ ] Optional notifications
 
 ---
 
 # Version 4
 
 Focus:
-Historical analysis.
+Travel Intelligence
 
-## Statistics
+## Analytics
 
-- [ ] Historical price database
-- [ ] Lowest recorded price
-- [ ] Highest recorded price
-- [ ] Average price
-- [ ] Price timeline
+- [ ] Historical statistics
+- [ ] Booking history
+- [ ] Price distributions
 - [ ] Cheapest booking window
-- [ ] Historical alert log
+- [ ] Trend analysis
 
 ## Dashboard
 
-- [ ] Route overview
+- [ ] Journey overview
 - [ ] Historical charts
-- [ ] Alert history
-- [ ] Snapshot browser
+- [ ] Recommendation history
+- [ ] Search calendar
 
 ---
 
 # Version 5
 
 Focus:
-Web application.
+Complete travel planning.
 
 Tasks
 
-- [ ] Route management
-- [ ] Station dropdowns
-- [ ] Calendar picker
-- [ ] Alert configuration
-- [ ] Dashboard
-- [ ] User settings
+- [ ] Multiple operators
+- [ ] Split-ticket optimisation
+- [ ] Return journeys
+- [ ] Flexible destinations
+- [ ] Saved journeys
+- [ ] User profiles
 
 ---
 
 # Future Ideas
 
-These ideas are intentionally postponed.
+Ideas intentionally postponed.
 
-- Cheapest departure prediction
-- Price trend analysis
-- Flexible travel dates
-- Return journeys
-- Multiple passengers
-- Class monitoring
-- Alternative departure stations
-- Historical statistics API
-- Mobile application
+- Airline support
+- Bus support
+- Hotel integration
+- Calendar integration
+- AI travel recommendations
 
 ---
 
 # Development Principles
 
-The project follows a few simple principles.
+## Build infrastructure before features
 
 ## Keep services small
 
-Each service should have one clear responsibility.
+## One responsibility per service
 
-## Prefer configuration over hardcoded values
+## Backend owns business logic
 
-Behavior should be controlled through configuration whenever possible.
+## Configuration over hardcoded values
 
-## Build infrastructure first
+## Small iterative releases
 
-A stable foundation makes future features easier to build.
-
-## Small iterations
-
-Build the smallest useful feature first.
-
-## Refactor continuously
-
-Improve architecture before complexity grows.
-
-## Simplicity over cleverness
-
-Readable code is preferred over complex solutions.
-
----
-
-# Current Architecture
-
-```
-Config
-   │
-   ▼
-Journey Service
-   │
-   ▼
-Price Snapshot Service
-   │
-   ▼
-Snapshot Storage Service
-   │
-   ▼
-Price Comparison Service
-   │
-   ▼
-Alert Service
-```
-
-Each layer has a single responsibility and can evolve independently.
-
-## Definition of Done
-
-A feature is considered complete when:
-
-- [ ] Code is implemented
-- [ ] Feature has been verified
-- [ ] Documentation is updated
-- [ ] ROADMAP is updated if needed
-- [ ] CHANGELOG is updated
-- [ ] Changes are committed
+## Verify before expanding
