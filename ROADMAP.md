@@ -37,128 +37,109 @@ Completed:
 # Version 3
 
 Focus:
-**Travel Analysis**
+**Search & Travel Analysis**
 
-## 3.1 Search Periods
+The goal of Version 3 is to build the foundation for finding the cheapest practical train journey.
+
+The application should first collect a complete dataset for a search and then allow the user to explore it without performing additional searches.
+
+---
+
+## 3.1 Search
 
 Goal:
-Search journeys across an entire travel period instead of a single date.
+Create a simple but powerful search interface.
 
 Tasks
 
-- [ ] Support start and end dates
-- [ ] Search every day within the period
-- [ ] Store daily results
-- [ ] Compare prices between dates
+- [ ] Search by origin
+- [ ] Search by destination
+- [ ] Search by single date
+- [ ] Search by date range
 
 ---
 
-## 3.2 Price Analysis
+## 3.2 Dataset
 
 Goal:
-Identify the best travel dates.
+One search creates one journey dataset.
 
 Tasks
 
-- [ ] Cheapest travel day
-- [ ] Cheapest departure
-- [ ] Cheapest arrival
-- [ ] Historical lowest price
-- [ ] Price trends
+- [ ] Collect all journeys for the search
+- [ ] Store the dataset in memory
+- [ ] Keep the dataset available while the user explores the results
+
+Design principle
+
+> A search creates a dataset.
+> Filters and sorting never require a new search.
 
 ---
 
-## 3.3 Booking Optimizer
+## 3.3 Sorting
 
 Goal:
-Recommend the cheapest practical booking.
+Allow the user to change how journeys are presented.
 
 Tasks
 
-- [ ] Compare booking strategies
-- [ ] Compare total travel cost
-- [ ] Recommend best ticket(s)
-- [ ] Recommend which train to board
-- [ ] Calculate savings
+- [ ] Sort by price
+- [ ] Sort by departure time
+- [ ] Sort by arrival time
+- [ ] Sort by journey duration
+- [ ] Sort by number of changes
 
 ---
 
-## 3.4 Recommendations
+## 3.4 Filters
 
 Goal:
-Present clear booking recommendations.
+Filter the existing dataset without contacting SJ again.
 
 Tasks
 
-- [ ] Best travel option
-- [ ] Best booking strategy
-- [ ] Cheapest practical journey
-- [ ] Optional notifications
+- [ ] Departure time interval
+- [ ] Arrival time interval
+
+The filter panel should be collapsible.
+
+Show the number of active filters.
+
+Example:
+
+Filter (2)
 
 ---
 
-# Version 4
+## 3.5 Results
 
-Focus:
-Travel Intelligence
-
-## Analytics
-
-- [ ] Historical statistics
-- [ ] Booking history
-- [ ] Price distributions
-- [ ] Cheapest booking window
-- [ ] Trend analysis
-
-## Dashboard
-
-- [ ] Journey overview
-- [ ] Historical charts
-- [ ] Recommendation history
-- [ ] Search calendar
-
----
-
-# Version 5
-
-Focus:
-Complete travel planning.
+Goal:
+Present all matching journeys.
 
 Tasks
 
-- [ ] Multiple operators
-- [ ] Split-ticket optimisation
-- [ ] Return journeys
-- [ ] Flexible destinations
-- [ ] Saved journeys
-- [ ] User profiles
+- [ ] Journey cards
+- [ ] Price
+- [ ] Departure time
+- [ ] Arrival time
+- [ ] Journey duration
+- [ ] Number of changes
+- [ ] Change location
+- [ ] Change duration
+- [ ] Train numbers
+
+The user should always be able to remove filters and immediately see additional journeys without performing another search.
 
 ---
 
-# Future Ideas
+## 3.6 Future extensions
 
-Ideas intentionally postponed.
+Planned, but intentionally postponed.
 
-- Airline support
-- Bus support
-- Hotel integration
-- Calendar integration
-- AI travel recommendations
-
----
-
-# Development Principles
-
-## Build infrastructure before features
-
-## Keep services small
-
-## One responsibility per service
-
-## Backend owns business logic
-
-## Configuration over hardcoded values
-
-## Small iterative releases
-
-## Verify before expanding
+- Maximum price
+- Maximum journey duration
+- Maximum number of changes
+- Direct trains only
+- Split-ticket suggestions
+- Booking recommendations
