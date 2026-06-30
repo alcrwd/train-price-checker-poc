@@ -41,6 +41,17 @@ function printComparison(comparison) {
   console.log(
     `Unchanged trips: ${comparison.summary.unchangedTrips}`
   );
+
+  if (comparison.cheaperTrips.length > 0) {
+    console.log("");
+    console.log("Cheaper trips:");
+
+    for (const trip of comparison.cheaperTrips) {
+      console.log(
+        `${trip.departure} → ${trip.arrival}: ${trip.previousPrice} → ${trip.currentPrice} kr (${trip.difference} kr)`
+      );
+    }
+  }
 }
 
 function printAlert(alert) {
@@ -64,10 +75,11 @@ function printAlert(alert) {
 async function processRoute(route) {
   console.log("");
   console.log("############################################");
-  console.log(route.name);
+  console.log(`Route: ${route.name}`);
+  console.log(`ID: ${route.id}`);
   console.log("############################################");
 
-  const previousSnapshot = getLatestSnapshot();
+  const previousSnapshot = getLatestSnapshot(route.id);
 
   const trips = await getTripsWithPrices({
     fromStation: route.from.name,
@@ -82,7 +94,7 @@ async function processRoute(route) {
     trips,
   });
 
-  const savedPath = saveSnapshot(snapshot);
+  const savedPath = saveSnapshot(route.id, snapshot);
 
   console.log("");
   console.log("================================");
@@ -127,9 +139,16 @@ async function main() {
     return;
   }
 
+  console.log(`Processing ${routes.length} route(s)...`);
+
   for (const route of routes) {
     await processRoute(route);
   }
+
+  console.log("");
+  console.log("================================");
+  console.log("Finished");
+  console.log("================================");
 }
 
 main().catch((error) => {
