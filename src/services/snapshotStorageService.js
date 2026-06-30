@@ -1,11 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const SNAPSHOT_DIRECTORY = path.join(
-  process.cwd(),
-  "data",
-  "snapshots"
-);
+const SNAPSHOT_DIRECTORY = path.join(process.cwd(), "data", "snapshots");
 
 function ensureSnapshotDirectory() {
   fs.mkdirSync(SNAPSHOT_DIRECTORY, {
@@ -23,10 +19,7 @@ function saveSnapshot(snapshot) {
   const filename = createSnapshotFilename(snapshot.scannedAt);
   const filePath = path.join(SNAPSHOT_DIRECTORY, filename);
 
-  fs.writeFileSync(
-    filePath,
-    JSON.stringify(snapshot, null, 2)
-  );
+  fs.writeFileSync(filePath, JSON.stringify(snapshot, null, 2));
 
   return filePath;
 }
@@ -50,16 +43,6 @@ function getLatestSnapshotPath() {
   return path.join(SNAPSHOT_DIRECTORY, snapshots[snapshots.length - 1]);
 }
 
-function getPreviousSnapshotPath() {
-  const snapshots = listSnapshots();
-
-  if (snapshots.length < 2) {
-    return null;
-  }
-
-  return path.join(SNAPSHOT_DIRECTORY, snapshots[snapshots.length - 2]);
-}
-
 function loadSnapshot(filePath) {
   if (!filePath) return null;
 
@@ -70,16 +53,10 @@ function getLatestSnapshot() {
   return loadSnapshot(getLatestSnapshotPath());
 }
 
-function getPreviousSnapshot() {
-  return loadSnapshot(getPreviousSnapshotPath());
-}
-
 module.exports = {
   saveSnapshot,
   loadSnapshot,
   listSnapshots,
   getLatestSnapshotPath,
-  getPreviousSnapshotPath,
   getLatestSnapshot,
-  getPreviousSnapshot,
 };
