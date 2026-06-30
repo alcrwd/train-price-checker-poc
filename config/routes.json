@@ -1,0 +1,21 @@
+{
+  "routes": [
+    {
+      "id": "malmo-nykoping",
+      "name": "Malmö → Nyköping",
+      "enabled": true,
+
+      "from": {
+        "name": "Malmö Central"
+      },
+
+      "to": {
+        "name": "Nyköping Central"
+      },
+
+      "travel": {
+        "date": "2026-07-15"
+      }
+    }
+  ]
+}
