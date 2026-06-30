@@ -1,6 +1,4 @@
-const { fetchDeparturesWithOffers } = require("../src/api/sjApi");
-const { mapDeparturesToTrips } = require("../src/api/tripMapper");
-const { attachOffersToTrips } = require("../src/services/offerService");
+const { getTripsWithPrices } = require("../src/services/journeyService");
 const {
   createPriceSnapshot,
 } = require("../src/services/priceSnapshotService");
@@ -17,15 +15,28 @@ function printComparison(comparison) {
   console.log("================================");
   console.log("Price Comparison");
   console.log("================================");
-  console.log(`Previous lowest: ${comparison.previousLowestPrice ?? "-"}`);
-  console.log(`Current lowest: ${comparison.currentLowestPrice ?? "-"}`);
-  console.log(`Lowest difference: ${comparison.lowestPriceDifference ?? "-"}`);
+
+  console.log(
+    `Previous lowest: ${comparison.previousLowestPrice ?? "-"}`
+  );
+  console.log(
+    `Current lowest: ${comparison.currentLowestPrice ?? "-"}`
+  );
+  console.log(
+    `Lowest difference: ${comparison.lowestPriceDifference ?? "-"}`
+  );
+
   console.log("");
+
   console.log(`Added trips: ${comparison.summary.addedTrips}`);
   console.log(`Removed trips: ${comparison.summary.removedTrips}`);
   console.log(`Cheaper trips: ${comparison.summary.cheaperTrips}`);
-  console.log(`More expensive trips: ${comparison.summary.moreExpensiveTrips}`);
-  console.log(`Unchanged trips: ${comparison.summary.unchangedTrips}`);
+  console.log(
+    `More expensive trips: ${comparison.summary.moreExpensiveTrips}`
+  );
+  console.log(
+    `Unchanged trips: ${comparison.summary.unchangedTrips}`
+  );
 
   if (comparison.cheaperTrips.length > 0) {
     console.log("");
@@ -46,41 +57,51 @@ async function main() {
 
   const previousSnapshot = getLatestSnapshot();
 
-  console.log(`Scanning ${fromStation} → ${toStation} (${date})`);
+  console.log(
+    `Scanning ${fromStation} → ${toStation} (${date})`
+  );
 
-  const { departures, offersByDepartureId } = await fetchDeparturesWithOffers({
+  const trips = await getTripsWithPrices({
     fromStation,
     toStation,
     date,
   });
-
-  const trips = mapDeparturesToTrips(departures);
-  const tripsWithPrices = attachOffersToTrips(trips, offersByDepartureId);
 
   const currentSnapshot = createPriceSnapshot({
     fromStation,
     toStation,
     date,
-    trips: tripsWithPrices,
+    trips,
   });
 
   const savedPath = saveSnapshot(currentSnapshot);
 
+  console.log("");
   console.log("================================");
   console.log("Price Snapshot");
   console.log("================================");
   console.log(`Trips: ${currentSnapshot.numberOfTrips}`);
-  console.log(`Priced trips: ${currentSnapshot.numberOfPricedTrips}`);
-  console.log(`Lowest price: ${currentSnapshot.lowestPrice ?? "-"}`);
+  console.log(
+    `Priced trips: ${currentSnapshot.numberOfPricedTrips}`
+  );
+  console.log(
+    `Lowest price: ${currentSnapshot.lowestPrice ?? "-"}`
+  );
   console.log(`Saved: ${savedPath}`);
 
   if (!previousSnapshot) {
     console.log("");
-    console.log("No previous snapshot found. Skipping comparison.");
+    console.log(
+      "No previous snapshot found. Skipping comparison."
+    );
     return;
   }
 
-  const comparison = compareSnapshots(previousSnapshot, currentSnapshot);
+  const comparison = compareSnapshots(
+    previousSnapshot,
+    currentSnapshot
+  );
+
   printComparison(comparison);
 }
 
