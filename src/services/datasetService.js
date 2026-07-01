@@ -1,5 +1,24 @@
 const { getTripsWithPrices } = require("./journeyService");
 
+function addDays(dateString, days) {
+  const date = new Date(`${dateString}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+
+  return date.toISOString().slice(0, 10);
+}
+
+function isArrivalNextDay(departureTime, arrivalTime) {
+  return arrivalTime < departureTime;
+}
+
+function getArrivalDate(travelDate, departureTime, arrivalTime) {
+  if (isArrivalNextDay(departureTime, arrivalTime)) {
+    return addDays(travelDate, 1);
+  }
+
+  return travelDate;
+}
+
 function calculateTotalTransferMinutes(legs) {
   if (!legs || legs.length < 2) {
     return 0;
@@ -36,6 +55,7 @@ function mapTripToJourney(trip, search) {
     currency: "SEK",
 
     departureTime: trip.departure,
+    arrivalDate: getArrivalDate(search.travelDate, trip.departure, trip.arrival),
     arrivalTime: trip.arrival,
 
     durationMinutes: trip.durationMinutes,
