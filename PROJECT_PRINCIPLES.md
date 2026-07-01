@@ -186,3 +186,9 @@ Analyse.
 Present.
 
 Let the user decide.
+
+---
+
+These principles are intentionally difficult to change.
+
+Every change should improve the product without making it more complicated.
