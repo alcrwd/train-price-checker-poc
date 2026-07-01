@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dataset-demo": "node scripts/dataset-demo.js",
-    "travel-options-demo": "node scripts/travel-options-demo.js"
+    "travel-options-demo": "node scripts/travel-options-demo.js",
+    "dataset-debug": "node scripts/dataset-debug.js"
   },
   "repository": {
     "type": "git",
