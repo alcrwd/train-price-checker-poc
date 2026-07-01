@@ -4,11 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dataset-demo": "node scripts/dataset-demo.js",
-    "travel-options-demo": "node scripts/travel-options-demo.js",
-    "dataset-debug": "node scripts/dataset-debug.js"
-  },
+  "test": "echo \"Error: no test specified\" && exit 1",
+  "dataset-demo": "node scripts/dataset-demo.js",
+  "travel-options-demo": "node scripts/travel-options-demo.js",
+  "dataset-debug": "node scripts/dataset-debug.js",
+  "month-comparison-demo": "node scripts/month-comparison-demo.js"
+},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/alcrwd/train-price-checker-poc.git"
