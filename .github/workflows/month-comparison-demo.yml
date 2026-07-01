@@ -25,8 +25,11 @@ jobs:
       - name: Run month comparison demo
         run: npm run month-comparison-demo
 
-      - name: Upload month comparison result
+      - name: Upload month comparison artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: month-comparison-result
-          path: data/month-comparison-result.txt
+          name: month-comparison-artifacts
+          path: |
+            data/month-comparison-result.txt
+            artifacts/debug-missing-price.json
+          if-no-files-found: warn
