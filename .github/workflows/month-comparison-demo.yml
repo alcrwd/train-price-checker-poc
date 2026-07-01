@@ -31,5 +31,5 @@ jobs:
           name: month-comparison-artifacts
           path: |
             data/month-comparison-result.txt
-            artifacts/debug-missing-price.json
+            artifacts/*.json
           if-no-files-found: warn
