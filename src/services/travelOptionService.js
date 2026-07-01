@@ -1,3 +1,7 @@
+const {
+  findMatchingJourneyByFirstLeg,
+} = require("./trainMatcher");
+
 function getCheapestJourney(dataset) {
   const pricedJourneys = dataset.journeys.filter(
     (journey) => typeof journey.price === "number"
@@ -34,15 +38,27 @@ function createStandardOption(dataset) {
   };
 }
 
-function createStockholmOption({ stockholmDataset, norrkopingDataset }) {
-  if (!stockholmDataset || !norrkopingDataset) {
+function createStockholmOption({
+  standardJourney,
+  stockholmDataset,
+  norrkopingDataset,
+}) {
+  if (!standardJourney || !stockholmDataset || !norrkopingDataset) {
     return null;
   }
 
-  const stockholmJourney = getCheapestJourney(stockholmDataset);
+  const stockholmJourney = findMatchingJourneyByFirstLeg(
+    standardJourney,
+    stockholmDataset.journeys
+  );
+
+  if (!stockholmJourney) {
+    return null;
+  }
+
   const norrkopingJourney = getCheapestJourney(norrkopingDataset);
 
-  if (!stockholmJourney || !norrkopingJourney) {
+  if (!norrkopingJourney) {
     return null;
   }
 
@@ -80,14 +96,18 @@ function createTravelOptions({
   const options = [];
 
   const standardOption = createStandardOption(standardDataset);
-  const stockholmOption = createStockholmOption({
-    stockholmDataset,
-    norrkopingDataset,
-  });
 
   if (standardOption) {
     options.push(standardOption);
   }
+
+  const standardJourney = standardOption?.journeys?.[0];
+
+  const stockholmOption = createStockholmOption({
+    standardJourney,
+    stockholmDataset,
+    norrkopingDataset,
+  });
 
   if (stockholmOption) {
     options.push(stockholmOption);
