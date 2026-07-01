@@ -6,12 +6,59 @@ const {
   findMatchingJourneyByFirstLeg,
 } = require("../src/services/trainMatcher");
 
-const FIXED_TRANSFER_PRICE = 98;
+const STOCKHOLM_TO_NYKOPING_TRANSFER_PRICE = 98;
+const SWEDEN_TIME_ZONE = "Europe/Stockholm";
 
 function addDays(dateString, days) {
   const date = new Date(`${dateString}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
+}
+
+function timeToMinutes(time) {
+  if (!time) return null;
+
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+function getSwedenDateTimeParts() {
+  const parts = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: SWEDEN_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+
+  const values = Object.fromEntries(
+    parts
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value])
+  );
+
+  return {
+    date: `${values.year}-${values.month}-${values.day}`,
+    minutes: Number(values.hour) * 60 + Number(values.minute),
+  };
+}
+
+function shouldIncludeJourneyForCurrentSwedishTime(journey, travelDate) {
+  const swedenNow = getSwedenDateTimeParts();
+
+  if (travelDate !== swedenNow.date) {
+    return true;
+  }
+
+  const departureMinutes = timeToMinutes(journey.departureTime);
+
+  if (departureMinutes === null) {
+    return false;
+  }
+
+  return departureMinutes >= swedenNow.minutes;
 }
 
 function getFirstLegLabel(journey) {
@@ -48,33 +95,39 @@ function createComparisonRowsForDate({
   standardDataset,
   stockholmDataset,
 }) {
-  return standardDataset.journeys.map((standardJourney) => {
-    const stockholmJourney = findMatchingJourneyByFirstLeg(
-      standardJourney,
-      stockholmDataset.journeys
-    );
+  return standardDataset.journeys
+    .filter((journey) =>
+      shouldIncludeJourneyForCurrentSwedishTime(journey, travelDate)
+    )
+    .map((standardJourney) => {
+      const stockholmJourney = findMatchingJourneyByFirstLeg(
+        standardJourney,
+        stockholmDataset.journeys
+      );
 
-    const stockholmTotalPrice =
-      typeof stockholmJourney?.price === "number"
-        ? stockholmJourney.price + FIXED_TRANSFER_PRICE
-        : null;
+      const stockholmTotalPrice =
+        typeof stockholmJourney?.price === "number"
+          ? stockholmJourney.price + STOCKHOLM_TO_NYKOPING_TRANSFER_PRICE
+          : null;
 
-    return {
-      date: travelDate,
-      departureTime: standardJourney.departureTime || "N/A",
-      arrivalTime: standardJourney.arrivalTime || "N/A",
-      train: getFirstLegLabel(standardJourney),
-      standardPrice: standardJourney.price,
-      stockholmPrice: stockholmJourney?.price ?? null,
-      transferPrice: stockholmJourney ? FIXED_TRANSFER_PRICE : null,
-      stockholmTotalPrice,
-      difference: formatDifference(
-        standardJourney.price,
-        stockholmTotalPrice
-      ),
-      status: stockholmJourney ? "match" : "no-stockholm-match",
-    };
-  });
+      return {
+        date: travelDate,
+        departureTime: standardJourney.departureTime || "N/A",
+        arrivalTime: standardJourney.arrivalTime || "N/A",
+        train: getFirstLegLabel(standardJourney),
+        standardPrice: standardJourney.price,
+        stockholmPrice: stockholmJourney?.price ?? null,
+        transferPrice: stockholmJourney
+          ? STOCKHOLM_TO_NYKOPING_TRANSFER_PRICE
+          : null,
+        stockholmTotalPrice,
+        difference: formatDifference(
+          standardJourney.price,
+          stockholmTotalPrice
+        ),
+        status: stockholmJourney ? "match" : "no-stockholm-match",
+      };
+    });
 }
 
 function formatRow(row) {
@@ -113,7 +166,7 @@ async function createRowsForDate(travelDate) {
 }
 
 async function main() {
-  const startDate = new Date().toISOString().slice(0, 10);
+  const startDate = getSwedenDateTimeParts().date;
   const numberOfDays = 7;
 
   const outputPath = path.join(
