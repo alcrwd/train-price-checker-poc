@@ -6,45 +6,12 @@ const {
   findMatchingJourneyByFirstLeg,
 } = require("../src/services/trainMatcher");
 
+const FIXED_TRANSFER_PRICE = 98;
+
 function addDays(dateString, days) {
   const date = new Date(`${dateString}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
-}
-
-function timeToMinutes(time) {
-  if (!time) return null;
-
-  const [hours, minutes] = time.split(":").map(Number);
-  return hours * 60 + minutes;
-}
-
-function findFirstValidTransferJourney(referenceJourney, transferDataset) {
-  const firstLeg = referenceJourney?.legs?.[0];
-
-  if (!firstLeg?.arrivalTime) {
-    return null;
-  }
-
-  const transferReadyMinutes = timeToMinutes(firstLeg.arrivalTime);
-
-  return (
-    transferDataset.journeys
-      .filter((journey) => typeof journey.price === "number")
-      .filter((journey) => {
-        const departureMinutes = timeToMinutes(journey.departureTime);
-
-        if (departureMinutes === null || transferReadyMinutes === null) {
-          return false;
-        }
-
-        return departureMinutes >= transferReadyMinutes;
-      })
-      .sort(
-        (a, b) =>
-          timeToMinutes(a.departureTime) - timeToMinutes(b.departureTime)
-      )[0] || null
-  );
 }
 
 function getFirstLegLabel(journey) {
@@ -80,7 +47,6 @@ function createComparisonRowsForDate({
   travelDate,
   standardDataset,
   stockholmDataset,
-  norrkopingDataset,
 }) {
   return standardDataset.journeys.map((standardJourney) => {
     const stockholmJourney = findMatchingJourneyByFirstLeg(
@@ -88,13 +54,9 @@ function createComparisonRowsForDate({
       stockholmDataset.journeys
     );
 
-    const transferJourney = stockholmJourney
-      ? findFirstValidTransferJourney(standardJourney, norrkopingDataset)
-      : null;
-
     const stockholmTotalPrice =
-      stockholmJourney && transferJourney
-        ? stockholmJourney.price + transferJourney.price
+      typeof stockholmJourney?.price === "number"
+        ? stockholmJourney.price + FIXED_TRANSFER_PRICE
         : null;
 
     return {
@@ -104,18 +66,13 @@ function createComparisonRowsForDate({
       train: getFirstLegLabel(standardJourney),
       standardPrice: standardJourney.price,
       stockholmPrice: stockholmJourney?.price ?? null,
-      transferPrice: transferJourney?.price ?? null,
+      transferPrice: stockholmJourney ? FIXED_TRANSFER_PRICE : null,
       stockholmTotalPrice,
       difference: formatDifference(
         standardJourney.price,
         stockholmTotalPrice
       ),
-      matchStatus:
-        stockholmJourney && transferJourney
-          ? "match"
-          : stockholmJourney
-          ? "missing-transfer"
-          : "no-stockholm-match",
+      status: stockholmJourney ? "match" : "no-stockholm-match",
     };
   });
 }
@@ -131,7 +88,7 @@ function formatRow(row) {
     formatPrice(row.transferPrice),
     formatPrice(row.stockholmTotalPrice),
     row.difference,
-    row.matchStatus,
+    row.status,
   ].join(" | ");
 }
 
@@ -148,17 +105,10 @@ async function createRowsForDate(travelDate) {
     travelDate,
   });
 
-  const norrkopingDataset = await createDataset({
-    origin: "Norrköping Central",
-    destination: "Nyköping Central",
-    travelDate,
-  });
-
   return createComparisonRowsForDate({
     travelDate,
     standardDataset,
     stockholmDataset,
-    norrkopingDataset,
   });
 }
 
@@ -176,8 +126,8 @@ async function main() {
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 
   const lines = [
-    "Date | Departure | Arrival | Train | Standard | Stockholm ticket | Transfer | Stockholm total | Difference | Status",
-    "---- | --------- | ------- | ----- | -------- | ---------------- | -------- | --------------- | ---------- | ------",
+    "Date | Departure | Arrival | Train | Standard | Stockholm ticket | Fixed transfer | Stockholm total | Difference | Status",
+    "---- | --------- | ------- | ----- | -------- | ---------------- | -------------- | --------------- | ---------- | ------",
   ];
 
   for (let i = 0; i < numberOfDays; i++) {
