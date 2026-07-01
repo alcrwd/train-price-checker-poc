@@ -1,89 +1,58 @@
 const fs = require("fs");
 const path = require("path");
 
-const DEBUG_DEPARTURE_TIME_PASSED_PATH = path.join(
-  __dirname,
-  "..",
-  "..",
-  "artifacts",
-  "debug-departure-time-passed.json"
-);
+const DEBUG_DIRECTORY = path.join(__dirname, "..", "..", "artifacts");
 
-const DEBUG_UNAVAILABLE_PATH = path.join(
-  __dirname,
-  "..",
-  "..",
-  "artifacts",
-  "debug-future-unavailable.json"
-);
+const writtenDebugStatuses = new Set();
 
-let hasWrittenDepartureTimePassedDebug = false;
-let hasWrittenUnavailableDebug = false;
+function normalizeStatusForFilename(status) {
+  return status.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+}
+
+function getDepartureStatuses(offersJson) {
+  const statuses = offersJson?.departureStatus;
+
+  if (Array.isArray(statuses) && statuses.length > 0) {
+    return statuses;
+  }
+
+  return ["UNKNOWN_STATUS"];
+}
+
+function getDebugFilePath(departureStatuses) {
+  const statusKey = departureStatuses
+    .map(normalizeStatusForFilename)
+    .join("__");
+
+  return path.join(DEBUG_DIRECTORY, `debug-missing-price-${statusKey}.json`);
+}
 
 function writeDebugFile(filePath, payload) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
 
-  fs.writeFileSync(
-    filePath,
-    JSON.stringify(payload, null, 2),
-    "utf8"
-  );
+  fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), "utf8");
 }
 
-function getMissingPriceReason(offersJson) {
-  if (!offersJson) {
-    return {
-      reason: "no-offer-json-for-departure",
-      debugFile: null,
-    };
-  }
+function writeMissingPriceDebug({ trip, offersJson }) {
+  const departureStatuses = getDepartureStatuses(offersJson);
+  const statusKey = departureStatuses.join("|");
 
-  const departureStatus = offersJson.departureStatus || [];
-
-  if (departureStatus.includes("DEPARTURE_TIME_PASSED")) {
-    return {
-      reason: "departure-time-passed",
-      debugFile: DEBUG_DEPARTURE_TIME_PASSED_PATH,
-    };
-  }
-
-  return {
-    reason: "future-unavailable",
-    debugFile: DEBUG_UNAVAILABLE_PATH,
-  };
-}
-
-function writeMissingPriceDebug({ trip, offersJson, reasonInfo }) {
-  if (!offersJson) return;
-
-  if (reasonInfo.reason === "departure-time-passed") {
-    if (hasWrittenDepartureTimePassedDebug) return;
-
-    writeDebugFile(reasonInfo.debugFile, {
-      reason: reasonInfo.reason,
-      trip,
-      offersJson,
-    });
-
-    console.log("Saved debug response: departure-time-passed");
-
-    hasWrittenDepartureTimePassedDebug = true;
+  if (writtenDebugStatuses.has(statusKey)) {
     return;
   }
 
-  if (reasonInfo.reason === "future-unavailable") {
-    if (hasWrittenUnavailableDebug) return;
+  const filePath = getDebugFilePath(departureStatuses);
 
-    writeDebugFile(reasonInfo.debugFile, {
-      reason: reasonInfo.reason,
-      trip,
-      offersJson,
-    });
+  writeDebugFile(filePath, {
+    reason: "departure-status",
+    departureStatus: departureStatuses,
+    trip,
+    offersJson: offersJson || null,
+  });
 
-    console.log("Saved debug response: future-unavailable");
+  console.log(`Saved debug response: ${statusKey}`);
 
-    hasWrittenUnavailableDebug = true;
-  }
+  writtenDebugStatuses.add(statusKey);
 }
 
 function extractCheapestAvailablePrice(offersJson) {
@@ -115,12 +84,9 @@ function attachOffersToTrips(trips, offersByDepartureId) {
     const price = offersJson ? extractCheapestAvailablePrice(offersJson) : null;
 
     if (price === null) {
-      const reasonInfo = getMissingPriceReason(offersJson);
-
       writeMissingPriceDebug({
         trip,
         offersJson,
-        reasonInfo,
       });
     }
 
