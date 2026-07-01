@@ -1,6 +1,23 @@
 const { chromium } = require("playwright");
 const { createClient } = require("../lib/sj/client");
 
+const STATION_IDS = {
+  "Malmö Central": "740000003",
+  "Stockholm Central": "740000001",
+  "Norrköping Central": "740000007",
+  "Nyköping Central": "740000050",
+};
+
+function getStationId(stationName) {
+  const stationId = STATION_IDS[stationName];
+
+  if (!stationId) {
+    throw new Error(`Unknown station: ${stationName}`);
+  }
+
+  return stationId;
+}
+
 async function fetchDeparturesWithOffers({ fromStation, toStation, date }) {
   const browser = await chromium.launch({
     headless: process.env.CI === "true",
@@ -21,8 +38,8 @@ async function fetchDeparturesWithOffers({ fromStation, toStation, date }) {
     });
 
     const result = await client.searchJourney({
-      origin: "740000003",
-      destination: "740000050",
+      origin: getStationId(fromStation),
+      destination: getStationId(toStation),
       departureDate: date,
     });
 
