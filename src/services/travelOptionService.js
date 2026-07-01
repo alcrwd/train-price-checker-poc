@@ -7,7 +7,7 @@ function getCheapestJourney(dataset) {
     return null;
   }
 
-  return pricedJourneys.sort((a, b) => a.price - b.price)[0];
+  return [...pricedJourneys].sort((a, b) => a.price - b.price)[0];
 }
 
 function createStandardOption(dataset) {
@@ -22,7 +22,6 @@ function createStandardOption(dataset) {
     label: "Standard ticket",
     totalPrice: journey.price,
     currency: journey.currency,
-    journeys: [journey],
     tickets: [
       {
         from: dataset.search.origin,
@@ -31,16 +30,67 @@ function createStandardOption(dataset) {
         currency: journey.currency,
       },
     ],
+    journeys: [journey],
   };
 }
 
-function createTravelOptions({ standardDataset }) {
+function createStockholmOption({ stockholmDataset, norrkopingDataset }) {
+  if (!stockholmDataset || !norrkopingDataset) {
+    return null;
+  }
+
+  const stockholmJourney = getCheapestJourney(stockholmDataset);
+  const norrkopingJourney = getCheapestJourney(norrkopingDataset);
+
+  if (!stockholmJourney || !norrkopingJourney) {
+    return null;
+  }
+
+  const totalPrice = stockholmJourney.price + norrkopingJourney.price;
+
+  return {
+    type: "stockholm-ticket-plus-transfer",
+    label: "Stockholm ticket + Norrköping transfer",
+    totalPrice,
+    currency: "SEK",
+    tickets: [
+      {
+        from: stockholmDataset.search.origin,
+        to: stockholmDataset.search.destination,
+        price: stockholmJourney.price,
+        currency: stockholmJourney.currency,
+        note: "Buy this ticket and leave the train at Norrköping Central.",
+      },
+      {
+        from: norrkopingDataset.search.origin,
+        to: norrkopingDataset.search.destination,
+        price: norrkopingJourney.price,
+        currency: norrkopingJourney.currency,
+      },
+    ],
+    journeys: [stockholmJourney, norrkopingJourney],
+  };
+}
+
+function createTravelOptions({
+  standardDataset,
+  stockholmDataset,
+  norrkopingDataset,
+}) {
   const options = [];
 
   const standardOption = createStandardOption(standardDataset);
+  const stockholmOption = createStockholmOption({
+    stockholmDataset,
+    norrkopingDataset,
+  });
 
   if (standardOption) {
     options.push(standardOption);
+  }
+
+  if (stockholmOption) {
+    options.push(stockholmOption);
   }
 
   return {
