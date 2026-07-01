@@ -2,6 +2,11 @@ const {
   findMatchingJourneyByFirstLeg,
 } = require("./trainMatcher");
 
+function timeToMinutes(time) {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
 function getCheapestJourney(dataset) {
   const pricedJourneys = dataset.journeys.filter(
     (journey) => typeof journey.price === "number"
@@ -12,6 +17,32 @@ function getCheapestJourney(dataset) {
   }
 
   return [...pricedJourneys].sort((a, b) => a.price - b.price)[0];
+}
+
+function findFirstValidTransferJourney(referenceJourney, transferDataset) {
+  const firstLeg = referenceJourney?.legs?.[0];
+
+  if (!firstLeg?.arrivalTime) {
+    return null;
+  }
+
+  const transferReadyMinutes = timeToMinutes(firstLeg.arrivalTime);
+
+  const validTransfers = transferDataset.journeys
+    .filter((journey) => typeof journey.price === "number")
+    .filter((journey) => {
+      if (!journey.departureTime) {
+        return false;
+      }
+
+      return timeToMinutes(journey.departureTime) >= transferReadyMinutes;
+    })
+    .sort(
+      (a, b) =>
+        timeToMinutes(a.departureTime) - timeToMinutes(b.departureTime)
+    );
+
+  return validTransfers[0] || null;
 }
 
 function createStandardOption(dataset) {
@@ -56,7 +87,10 @@ function createStockholmOption({
     return null;
   }
 
-  const norrkopingJourney = getCheapestJourney(norrkopingDataset);
+  const norrkopingJourney = findFirstValidTransferJourney(
+    standardJourney,
+    norrkopingDataset
+  );
 
   if (!norrkopingJourney) {
     return null;
