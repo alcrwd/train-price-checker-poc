@@ -1,0 +1,32 @@
+name: Travel Options Demo
+
+on:
+  workflow_dispatch:
+
+jobs:
+  travel-options-demo:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run travel options demo
+        run: npm run travel-options-demo
+
+      - name: Upload travel options result
+        uses: actions/upload-artifact@v4
+        with:
+          name: travel-options-demo-result
+          path: data/travel-options-demo-result.json
