@@ -1,4 +1,4 @@
-name: Month Comparison Demo
+name: Comparison
 
 on:
   workflow_dispatch:
