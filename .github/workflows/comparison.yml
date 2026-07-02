@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  month-comparison-demo:
+  comparison:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,14 +22,15 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Run month comparison demo
-        run: npm run month-comparison-demo
+      - name: Run comparison
+        run: npm run comparison
 
-      - name: Upload month comparison artifacts
+      - name: Upload comparison artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: month-comparison-artifacts
+          name: comparison-artifacts
           path: |
-            data/month-comparison-result.txt
+            data/comparison-report.txt
+            data/comparison-result.json
             artifacts/*.json
           if-no-files-found: warn
