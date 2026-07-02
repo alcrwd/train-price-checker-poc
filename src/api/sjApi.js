@@ -20,8 +20,8 @@ function getStationId(stationName) {
 
 async function fetchDeparturesWithOffers({ fromStation, toStation, date }) {
   const browser = await chromium.launch({
-    headless: process.env.CI === "true",
-  });
+  headless: true,
+});
 
   const page = await browser.newPage({
     viewport: {
