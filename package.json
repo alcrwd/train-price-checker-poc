@@ -5,14 +5,14 @@
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
-    "start": "node src/server.js",
-    "postinstall": "npx playwright install chromium",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dataset-demo": "node scripts/dataset-demo.js",
-    "travel-options-demo": "node scripts/travel-options-demo.js",
-    "dataset-debug": "node scripts/dataset-debug.js",
-    "comparison": "node scripts/comparison.js"
-  },
+  "start": "node src/server.js",
+  "postinstall": "npx playwright install --with-deps chromium",
+  "test": "echo \"Error: no test specified\" && exit 1",
+  "dataset-demo": "node scripts/dataset-demo.js",
+  "travel-options-demo": "node scripts/travel-options-demo.js",
+  "dataset-debug": "node scripts/dataset-debug.js",
+  "comparison": "node scripts/comparison.js"
+},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/alcrwd/train-price-checker-poc.git"
