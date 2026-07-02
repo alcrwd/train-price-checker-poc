@@ -19,6 +19,14 @@ function getDepartureStatuses(offersJson) {
   return ["UNKNOWN_STATUS"];
 }
 
+function getPrimaryDepartureStatus({ price, offersJson }) {
+  if (typeof price === "number") {
+    return "PRICED";
+  }
+
+  return getDepartureStatuses(offersJson)[0];
+}
+
 function getDebugFilePath(departureStatuses) {
   const statusKey = departureStatuses
     .map(normalizeStatusForFilename)
@@ -82,6 +90,7 @@ function attachOffersToTrips(trips, offersByDepartureId) {
   return trips.map((trip) => {
     const offersJson = offersByDepartureId[trip.id];
     const price = offersJson ? extractCheapestAvailablePrice(offersJson) : null;
+    const departureStatus = getPrimaryDepartureStatus({ price, offersJson });
 
     if (price === null) {
       writeMissingPriceDebug({
@@ -94,6 +103,7 @@ function attachOffersToTrips(trips, offersByDepartureId) {
       ...trip,
       price,
       hasPrice: price !== null,
+      departureStatus,
     };
   });
 }
