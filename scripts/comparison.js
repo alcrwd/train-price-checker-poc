@@ -8,6 +8,7 @@ const {
 
 const STOCKHOLM_TO_NYKOPING_TRANSFER_PRICE = 98;
 const SWEDEN_TIME_ZONE = "Europe/Stockholm";
+const NUMBER_OF_DAYS = 7;
 
 function addDays(dateString, days) {
   const date = new Date(`${dateString}T00:00:00Z`);
@@ -90,6 +91,86 @@ function formatDifference(standardPrice, stockholmTotalPrice) {
   return difference > 0 ? `+${difference}` : String(difference);
 }
 
+function normalizeUiStatus(journey) {
+  if (typeof journey?.price === "number") {
+    return "PRICED";
+  }
+
+  if (journey?.departureStatus === "SOLD_OUT") {
+    return "SOLD_OUT";
+  }
+
+  return "NO_OFFERS";
+}
+
+function mapLegForUi(leg) {
+  return {
+    operatorName: leg.operator || null,
+    trainNumber: leg.trainNumber || null,
+  };
+}
+
+function mapJourneyForUi(journey) {
+  const firstLeg = journey.legs?.[0] || {};
+
+  return {
+    id: journey.id,
+    departureTime: journey.departureTime,
+    arrivalTime: journey.arrivalTime,
+    arrivalDate: journey.arrivalDate,
+    durationMinutes: journey.durationMinutes,
+    numberOfChanges: journey.numberOfChanges,
+    totalTransferMinutes: journey.totalTransferMinutes,
+    price: typeof journey.price === "number" ? journey.price : null,
+    currency: "SEK",
+    departureStatus: normalizeUiStatus(journey),
+    trainNumber: firstLeg.trainNumber || null,
+    operatorName: firstLeg.operator || null,
+    brand: firstLeg.operator || null,
+    legs: (journey.legs || []).map(mapLegForUi),
+  };
+}
+
+function getStockholmStrategyLegs({ standardJourney, stockholmJourney }) {
+  const sjLegs = stockholmJourney?.legs?.length
+    ? [stockholmJourney.legs[0]]
+    : [];
+
+  const transferLegs = (standardJourney.legs || []).slice(1);
+
+  return [...sjLegs, ...transferLegs].map(mapLegForUi);
+}
+
+function getCheapest({ directPrice, stockholmTotalPrice }) {
+  const hasDirectPrice = typeof directPrice === "number";
+  const hasStockholmPrice = typeof stockholmTotalPrice === "number";
+
+  if (!hasDirectPrice && !hasStockholmPrice) {
+    return "none";
+  }
+
+  if (hasDirectPrice && !hasStockholmPrice) {
+    return "direct";
+  }
+
+  if (!hasDirectPrice && hasStockholmPrice) {
+    return "stockholm";
+  }
+
+  return directPrice <= stockholmTotalPrice ? "direct" : "stockholm";
+}
+
+function getPriceDifference({ directPrice, stockholmTotalPrice }) {
+  if (
+    typeof directPrice !== "number" ||
+    typeof stockholmTotalPrice !== "number"
+  ) {
+    return null;
+  }
+
+  return stockholmTotalPrice - directPrice;
+}
+
 function createComparisonRowsForDate({
   travelDate,
   standardDataset,
@@ -130,6 +211,67 @@ function createComparisonRowsForDate({
     });
 }
 
+function createLovableEntriesForDate({
+  travelDate,
+  standardDataset,
+  stockholmDataset,
+}) {
+  return standardDataset.journeys
+    .filter((journey) =>
+      shouldIncludeJourneyForCurrentSwedishTime(journey, travelDate)
+    )
+    .map((standardJourney) => {
+      const stockholmJourney = findMatchingJourneyByFirstLeg(
+        standardJourney,
+        stockholmDataset.journeys
+      );
+
+      const stockholmTotalPrice =
+        typeof stockholmJourney?.price === "number"
+          ? stockholmJourney.price + STOCKHOLM_TO_NYKOPING_TRANSFER_PRICE
+          : null;
+
+      const directPrice =
+        typeof standardJourney.price === "number" ? standardJourney.price : null;
+
+      const direct = mapJourneyForUi(standardJourney);
+
+      const stockholm = stockholmJourney
+        ? {
+            toStockholm: mapJourneyForUi(stockholmJourney),
+            stockholmPrice:
+              typeof stockholmJourney.price === "number"
+                ? stockholmJourney.price
+                : null,
+            malartagTransferSek:
+              typeof stockholmJourney.price === "number"
+                ? STOCKHOLM_TO_NYKOPING_TRANSFER_PRICE
+                : null,
+            totalPrice: stockholmTotalPrice,
+            departureStatus: normalizeUiStatus(stockholmJourney),
+            legs: getStockholmStrategyLegs({
+              standardJourney,
+              stockholmJourney,
+            }),
+          }
+        : null;
+
+      return {
+        id: standardJourney.id,
+        direct,
+        stockholm,
+        cheapest: getCheapest({
+          directPrice,
+          stockholmTotalPrice,
+        }),
+        priceDifference: getPriceDifference({
+          directPrice,
+          stockholmTotalPrice,
+        }),
+      };
+    });
+}
+
 function formatRow(row) {
   return [
     row.date,
@@ -145,7 +287,7 @@ function formatRow(row) {
   ].join(" | ");
 }
 
-async function createRowsForDate(travelDate) {
+async function createComparisonForDate(travelDate) {
   const standardDataset = await createDataset({
     origin: "Malmö Central",
     destination: "Nyköping Central",
@@ -158,22 +300,26 @@ async function createRowsForDate(travelDate) {
     travelDate,
   });
 
-  return createComparisonRowsForDate({
-    travelDate,
-    standardDataset,
-    stockholmDataset,
-  });
+  return {
+    rows: createComparisonRowsForDate({
+      travelDate,
+      standardDataset,
+      stockholmDataset,
+    }),
+    entries: createLovableEntriesForDate({
+      travelDate,
+      standardDataset,
+      stockholmDataset,
+    }),
+  };
 }
 
-async function main() {
-  const startDate = getSwedenDateTimeParts().date;
-  const numberOfDays = 7;
-
+function writeTextReport(rows) {
   const outputPath = path.join(
     __dirname,
     "..",
     "data",
-    "month-comparison-result.txt"
+    "comparison-report.txt"
   );
 
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
@@ -181,16 +327,8 @@ async function main() {
   const lines = [
     "Date | Departure | Arrival | Train | Standard | Stockholm ticket | Fixed transfer | Stockholm total | Difference | Status",
     "---- | --------- | ------- | ----- | -------- | ---------------- | -------------- | --------------- | ---------- | ------",
+    ...rows.map(formatRow),
   ];
-
-  for (let i = 0; i < numberOfDays; i++) {
-    const travelDate = addDays(startDate, i);
-    const rows = await createRowsForDate(travelDate);
-
-    for (const row of rows) {
-      lines.push(formatRow(row));
-    }
-  }
 
   const result = lines.join("\n");
 
@@ -198,7 +336,55 @@ async function main() {
 
   console.log(result);
   console.log("");
-  console.log(`Result written to: ${outputPath}`);
+  console.log(`Report written to: ${outputPath}`);
+}
+
+function writeComparisonJson({ entries, startDate }) {
+  const outputPath = path.join(
+    __dirname,
+    "..",
+    "data",
+    "comparison-result.json"
+  );
+
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+
+  const result = {
+    generatedAt: new Date().toISOString(),
+    search: {
+      origin: "Malmö Central",
+      destination: "Nyköping Central",
+      via: "Stockholm Central",
+      travelDate: startDate,
+      malartagTransferSek: STOCKHOLM_TO_NYKOPING_TRANSFER_PRICE,
+    },
+    entries,
+  };
+
+  fs.writeFileSync(outputPath, JSON.stringify(result, null, 2), "utf8");
+
+  console.log(`JSON written to: ${outputPath}`);
+}
+
+async function main() {
+  const startDate = getSwedenDateTimeParts().date;
+
+  const allRows = [];
+  const allEntries = [];
+
+  for (let i = 0; i < NUMBER_OF_DAYS; i++) {
+    const travelDate = addDays(startDate, i);
+    const comparison = await createComparisonForDate(travelDate);
+
+    allRows.push(...comparison.rows);
+    allEntries.push(...comparison.entries);
+  }
+
+  writeTextReport(allRows);
+  writeComparisonJson({
+    entries: allEntries,
+    startDate,
+  });
 }
 
 main().catch((error) => {
