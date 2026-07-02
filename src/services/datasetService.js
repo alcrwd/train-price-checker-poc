@@ -53,6 +53,7 @@ function mapTripToJourney(trip, search) {
 
     price: trip.price,
     currency: "SEK",
+    departureStatus: trip.departureStatus,
 
     departureTime: trip.departure,
     arrivalDate: getArrivalDate(search.travelDate, trip.departure, trip.arrival),
