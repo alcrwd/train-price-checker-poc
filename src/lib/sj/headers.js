@@ -16,9 +16,26 @@ function pickApiHeaders(headers) {
 }
 
 async function captureApiHeaders(page, { fromStation, toStation, date }) {
+  let timeoutId;
+
   return new Promise(async (resolve, reject) => {
-    const timeout = setTimeout(() => {
-      reject(new Error("Timed out waiting for POST /search request"));
+    let settled = false;
+
+    function finish(error, value) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve(value);
+    }
+
+    timeoutId = setTimeout(() => {
+      finish(new Error("Timed out waiting for POST /search request"));
     }, 30000);
 
     page.on("request", (request) => {
@@ -28,14 +45,26 @@ async function captureApiHeaders(page, { fromStation, toStation, date }) {
         request.method() === "POST" &&
         url.includes("/public/sales/booking/v3/search")
       ) {
-        clearTimeout(timeout);
-        resolve(pickApiHeaders(request.headers()));
+        finish(null, pickApiHeaders(request.headers()));
       }
     });
 
-    await page.goto(buildSjUrl(fromStation, toStation, date), {
-      waitUntil: "domcontentloaded",
+    page.on("crash", () => {
+      finish(new Error("SJ page crashed while capturing API headers"));
     });
+
+    page.on("pageerror", (error) => {
+      console.warn("SJ page error:", error.message);
+    });
+
+    try {
+      await page.goto(buildSjUrl(fromStation, toStation, date), {
+        waitUntil: "domcontentloaded",
+        timeout: 30000,
+      });
+    } catch (error) {
+      finish(error);
+    }
   });
 }
 
