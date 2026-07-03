@@ -1,4 +1,4 @@
-const { getTripsWithPrices } = require("./journeyService");
+#const { getTripsWithPrices } = require("./journeyService");
 
 function addDays(dateString, days) {
   const date = new Date(`${dateString}T00:00:00Z`);
@@ -28,7 +28,11 @@ function calculateTotalTransferMinutes(legs) {
 
   for (let i = 0; i < legs.length - 1; i++) {
     const arrival = new Date(`1970-01-01T${legs[i].arrivalTime}:00`);
-    const departure = new Date(`1970-01-01T${legs[i + 1].departureTime}:00`);
+    let departure = new Date(`1970-01-01T${legs[i + 1].departureTime}:00`);
+
+    if (departure < arrival) {
+      departure.setDate(departure.getDate() + 1);
+    }
 
     total += Math.round((departure - arrival) / 60000);
   }
