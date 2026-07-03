@@ -8,6 +8,9 @@ const STATION_IDS = {
   "Nyköping Central": "740000050",
 };
 
+let browserPromise = null;
+let queue = Promise.resolve();
+
 function getStationId(stationName) {
   const stationId = STATION_IDS[stationName];
 
@@ -18,10 +21,27 @@ function getStationId(stationName) {
   return stationId;
 }
 
-async function fetchDeparturesWithOffers({ fromStation, toStation, date }) {
-  const browser = await chromium.launch({
-  headless: true,
-});
+async function getBrowser() {
+  if (!browserPromise) {
+    browserPromise = chromium.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+  }
+
+  return browserPromise;
+}
+
+function runQueued(task) {
+  const result = queue.then(task, task);
+
+  queue = result.catch(() => {});
+
+  return result;
+}
+
+async function fetchDeparturesWithOffersUnqueued({ fromStation, toStation, date }) {
+  const browser = await getBrowser();
 
   const page = await browser.newPage({
     viewport: {
@@ -54,8 +74,18 @@ async function fetchDeparturesWithOffers({ fromStation, toStation, date }) {
       offersByDepartureId,
     };
   } finally {
-    await browser.close();
+    await page.close().catch(() => {});
   }
+}
+
+async function fetchDeparturesWithOffers({ fromStation, toStation, date }) {
+  return runQueued(() =>
+    fetchDeparturesWithOffersUnqueued({
+      fromStation,
+      toStation,
+      date,
+    })
+  );
 }
 
 async function fetchDepartures({ fromStation, toStation, date }) {
@@ -67,6 +97,21 @@ async function fetchDepartures({ fromStation, toStation, date }) {
 
   return departures;
 }
+
+process.on("SIGTERM", async () => {
+  if (!browserPromise) return;
+
+  const browser = await browserPromise.catch(() => null);
+  await browser?.close().catch(() => {});
+});
+
+process.on("SIGINT", async () => {
+  if (!browserPromise) return;
+
+  const browser = await browserPromise.catch(() => null);
+  await browser?.close().catch(() => {});
+  process.exit(0);
+});
 
 module.exports = {
   fetchDepartures,
