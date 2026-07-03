@@ -6,9 +6,9 @@ const PORT = process.env.PORT || 3000;
 
 function sendJson(res, statusCode, data) {
   res.writeHead(statusCode, {
-    "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
-  });
+  "Content-Type": "application/json; charset=utf-8",
+  "Access-Control-Allow-Origin": "*",
+});
 
   res.end(JSON.stringify(data, null, 2));
 }
