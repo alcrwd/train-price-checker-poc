@@ -1,4 +1,4 @@
-#const { getTripsWithPrices } = require("./journeyService");
+const { getTripsWithPrices } = require("./journeyService");
 
 function addDays(dateString, days) {
   const date = new Date(`${dateString}T00:00:00Z`);
