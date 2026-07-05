@@ -1,6 +1,616 @@
 const { createDataset } = require("./datasetService");
 
-const SWEDEN_TIME_ZONE = "Europe/Stockholm";
+const {
+  "generatedAt": "2026-07-05T22:44:43.577Z",
+  "search": {
+    "origin": "Malmö Central",
+    "destination": "Nyköping Central",
+    "via": "Stockholm Central",
+    "travelDate": "2026-07-06",
+    "malartagTransferSek": 98,
+    "direction": "malmo-nykoping"
+  },
+  "entries": [
+    {
+      "id": "6bfcbd43-6ee3-32d8-9025-d630b27ad3ae",
+      "direct": {
+        "id": "6bfcbd43-6ee3-32d8-9025-d630b27ad3ae",
+        "departureTime": "05:07",
+        "arrivalTime": "09:14",
+        "arrivalDate": "2026-07-06",
+        "durationMinutes": 247,
+        "numberOfChanges": 1,
+        "totalTransferMinutes": 14,
+        "price": 2190,
+        "currency": "SEK",
+        "departureStatus": "PRICED",
+        "trainNumber": "522",
+        "operatorName": "SJ Snabbtåg",
+        "brand": "SJ Snabbtåg",
+        "legs": [
+          {
+            "operatorName": "SJ Snabbtåg",
+            "trainNumber": "522",
+            "departureDate": "2026-07-06",
+            "departureTime": "05:07",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "08:16",
+            "changeMinutes": null
+          },
+          {
+            "operatorName": "Mälartåg",
+            "trainNumber": "224",
+            "departureDate": "2026-07-06",
+            "departureTime": "08:30",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "09:14",
+            "changeMinutes": null
+          }
+        ]
+      },
+      "stockholm": null,
+      "cheapest": "direct",
+      "priceDifference": null
+    },
+    {
+      "id": "91d430be-9f4e-3681-888c-95b88526cb9f",
+      "direct": {
+        "id": "91d430be-9f4e-3681-888c-95b88526cb9f",
+        "departureTime": "06:07",
+        "arrivalTime": "10:14",
+        "arrivalDate": "2026-07-06",
+        "durationMinutes": 247,
+        "numberOfChanges": 1,
+        "totalTransferMinutes": 12,
+        "price": 2190,
+        "currency": "SEK",
+        "departureStatus": "PRICED",
+        "trainNumber": "524",
+        "operatorName": "SJ Snabbtåg",
+        "brand": "SJ Snabbtåg",
+        "legs": [
+          {
+            "operatorName": "SJ Snabbtåg",
+            "trainNumber": "524",
+            "departureDate": "2026-07-06",
+            "departureTime": "06:07",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "09:18",
+            "changeMinutes": null
+          },
+          {
+            "operatorName": "Mälartåg",
+            "trainNumber": "226",
+            "departureDate": "2026-07-06",
+            "departureTime": "09:30",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "10:14",
+            "changeMinutes": null
+          }
+        ]
+      },
+      "stockholm": null,
+      "cheapest": "direct",
+      "priceDifference": null
+    },
+    {
+      "id": "57bdacf3-1c2c-3f10-b189-26012ab2a662",
+      "direct": {
+        "id": "57bdacf3-1c2c-3f10-b189-26012ab2a662",
+        "departureTime": "08:07",
+        "arrivalTime": "12:14",
+        "arrivalDate": "2026-07-06",
+        "durationMinutes": 247,
+        "numberOfChanges": 1,
+        "totalTransferMinutes": 11,
+        "price": 2190,
+        "currency": "SEK",
+        "departureStatus": "PRICED",
+        "trainNumber": "528",
+        "operatorName": "SJ Snabbtåg",
+        "brand": "SJ Snabbtåg",
+        "legs": [
+          {
+            "operatorName": "SJ Snabbtåg",
+            "trainNumber": "528",
+            "departureDate": "2026-07-06",
+            "departureTime": "08:07",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "11:16",
+            "changeMinutes": null
+          },
+          {
+            "operatorName": "Mälartåg",
+            "trainNumber": "230",
+            "departureDate": "2026-07-06",
+            "departureTime": "11:27",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "12:14",
+            "changeMinutes": null
+          }
+        ]
+      },
+      "stockholm": null,
+      "cheapest": "direct",
+      "priceDifference": null
+    },
+    {
+      "id": "c8f8145c-d002-3fc2-9da4-9f333808e988",
+      "direct": {
+        "id": "c8f8145c-d002-3fc2-9da4-9f333808e988",
+        "departureTime": "09:07",
+        "arrivalTime": "13:14",
+        "arrivalDate": "2026-07-06",
+        "durationMinutes": 247,
+        "numberOfChanges": 1,
+        "totalTransferMinutes": 12,
+        "price": null,
+        "currency": "SEK",
+        "departureStatus": "SOLD_OUT",
+        "trainNumber": "530",
+        "operatorName": "SJ Snabbtåg",
+        "brand": "SJ Snabbtåg",
+        "legs": [
+          {
+            "operatorName": "SJ Snabbtåg",
+            "trainNumber": "530",
+            "departureDate": "2026-07-06",
+            "departureTime": "09:07",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "12:16",
+            "changeMinutes": null
+          },
+          {
+            "operatorName": "Mälartåg",
+            "trainNumber": "232",
+            "departureDate": "2026-07-06",
+            "departureTime": "12:28",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "13:14",
+            "changeMinutes": null
+          }
+        ]
+      },
+      "stockholm": null,
+      "cheapest": "none",
+      "priceDifference": null
+    },
+    {
+      "id": "656da617-1664-3288-9476-c65e4ece4323",
+      "direct": {
+        "id": "656da617-1664-3288-9476-c65e4ece4323",
+        "departureTime": "11:07",
+        "arrivalTime": "17:45",
+        "arrivalDate": "2026-07-06",
+        "durationMinutes": 398,
+        "numberOfChanges": 1,
+        "totalTransferMinutes": 55,
+        "price": null,
+        "currency": "SEK",
+        "departureStatus": "SOLD_OUT",
+        "trainNumber": "534",
+        "operatorName": "SJ Snabbtåg",
+        "brand": "SJ Snabbtåg",
+        "legs": [
+          {
+            "operatorName": "SJ Snabbtåg",
+            "trainNumber": "534",
+            "departureDate": "2026-07-06",
+            "departureTime": "11:07",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "15:39",
+            "changeMinutes": null
+          },
+          {
+            "operatorName": "Mälartåg",
+            "trainNumber": "241",
+            "departureDate": "2026-07-06",
+            "departureTime": "16:34",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "17:45",
+            "changeMinutes": null
+          }
+        ]
+      },
+      "stockholm": {
+        "toStockholm": {
+          "id": "c448c948-6655-3dcb-a52e-6b417cbc8eed",
+          "departureTime": "11:07",
+          "arrivalTime": "15:39",
+          "arrivalDate": "2026-07-06",
+          "durationMinutes": 272,
+          "numberOfChanges": 0,
+          "totalTransferMinutes": 0,
+          "price": null,
+          "currency": "SEK",
+          "departureStatus": "SOLD_OUT",
+          "trainNumber": "534",
+          "operatorName": "SJ Snabbtåg",
+          "brand": "SJ Snabbtåg",
+          "legs": [
+            {
+              "operatorName": "SJ Snabbtåg",
+              "trainNumber": "534",
+              "departureDate": "2026-07-06",
+              "departureTime": "11:07",
+              "arrivalDate": "2026-07-06",
+              "arrivalTime": "15:39",
+              "changeMinutes": null
+            }
+          ]
+        },
+        "stockholmPrice": null,
+        "malartagTransferSek": null,
+        "totalPrice": null,
+        "departureStatus": "SOLD_OUT",
+        "legs": [
+          {
+            "operatorName": "SJ Snabbtåg",
+            "trainNumber": "534",
+            "departureDate": "2026-07-06",
+            "departureTime": "11:07",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "15:39",
+            "changeMinutes": null
+          },
+          {
+            "operatorName": "Mälartåg",
+            "trainNumber": "241",
+            "departureDate": "2026-07-06",
+            "departureTime": "16:34",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "17:45",
+            "changeMinutes": null
+          }
+        ]
+      },
+      "cheapest": "none",
+      "priceDifference": null
+    },
+    {
+      "id": "df309fcf-7761-356e-aa23-30736b86c3e2",
+      "direct": {
+        "id": "df309fcf-7761-356e-aa23-30736b86c3e2",
+        "departureTime": "12:07",
+        "arrivalTime": "16:14",
+        "arrivalDate": "2026-07-06",
+        "durationMinutes": 247,
+        "numberOfChanges": 1,
+        "totalTransferMinutes": 12,
+        "price": null,
+        "currency": "SEK",
+        "departureStatus": "SOLD_OUT",
+        "trainNumber": "536",
+        "operatorName": "SJ Snabbtåg",
+        "brand": "SJ Snabbtåg",
+        "legs": [
+          {
+            "operatorName": "SJ Snabbtåg",
+            "trainNumber": "536",
+            "departureDate": "2026-07-06",
+            "departureTime": "12:07",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "15:16",
+            "changeMinutes": null
+          },
+          {
+            "operatorName": "Mälartåg",
+            "trainNumber": "238",
+            "departureDate": "2026-07-06",
+            "departureTime": "15:28",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "16:14",
+            "changeMinutes": null
+          }
+        ]
+      },
+      "stockholm": null,
+      "cheapest": "none",
+      "priceDifference": null
+    },
+    {
+      "id": "bab703d5-a5a6-3072-b378-d60f9b4b2941",
+      "direct": {
+        "id": "bab703d5-a5a6-3072-b378-d60f9b4b2941",
+        "departureTime": "13:07",
+        "arrivalTime": "17:14",
+        "arrivalDate": "2026-07-06",
+        "durationMinutes": 247,
+        "numberOfChanges": 1,
+        "totalTransferMinutes": 10,
+        "price": null,
+        "currency": "SEK",
+        "departureStatus": "SOLD_OUT",
+        "trainNumber": "538",
+        "operatorName": "SJ Snabbtåg",
+        "brand": "SJ Snabbtåg",
+        "legs": [
+          {
+            "operatorName": "SJ Snabbtåg",
+            "trainNumber": "538",
+            "departureDate": "2026-07-06",
+            "departureTime": "13:07",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "16:20",
+            "changeMinutes": null
+          },
+          {
+            "operatorName": "Mälartåg",
+            "trainNumber": "240",
+            "departureDate": "2026-07-06",
+            "departureTime": "16:30",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "17:14",
+            "changeMinutes": null
+          }
+        ]
+      },
+      "stockholm": null,
+      "cheapest": "none",
+      "priceDifference": null
+    },
+    {
+      "id": "8777a42c-205c-3de0-9c0f-3b048625daf7",
+      "direct": {
+        "id": "8777a42c-205c-3de0-9c0f-3b048625daf7",
+        "departureTime": "15:07",
+        "arrivalTime": "20:14",
+        "arrivalDate": "2026-07-06",
+        "durationMinutes": 307,
+        "numberOfChanges": 1,
+        "totalTransferMinutes": 68,
+        "price": 2050,
+        "currency": "SEK",
+        "departureStatus": "PRICED",
+        "trainNumber": "542",
+        "operatorName": "SJ Snabbtåg",
+        "brand": "SJ Snabbtåg",
+        "legs": [
+          {
+            "operatorName": "SJ Snabbtåg",
+            "trainNumber": "542",
+            "departureDate": "2026-07-06",
+            "departureTime": "15:07",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "18:19",
+            "changeMinutes": null
+          },
+          {
+            "operatorName": "Mälartåg",
+            "trainNumber": "246",
+            "departureDate": "2026-07-06",
+            "departureTime": "19:27",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "20:14",
+            "changeMinutes": null
+          }
+        ]
+      },
+      "stockholm": null,
+      "cheapest": "direct",
+      "priceDifference": null
+    },
+    {
+      "id": "08725d76-a9b6-3162-aa1d-3ab4257651fc",
+      "direct": {
+        "id": "08725d76-a9b6-3162-aa1d-3ab4257651fc",
+        "departureTime": "16:07",
+        "arrivalTime": "21:14",
+        "arrivalDate": "2026-07-06",
+        "durationMinutes": 307,
+        "numberOfChanges": 1,
+        "totalTransferMinutes": 70,
+        "price": 2190,
+        "currency": "SEK",
+        "departureStatus": "PRICED",
+        "trainNumber": "544",
+        "operatorName": "SJ Snabbtåg",
+        "brand": "SJ Snabbtåg",
+        "legs": [
+          {
+            "operatorName": "SJ Snabbtåg",
+            "trainNumber": "544",
+            "departureDate": "2026-07-06",
+            "departureTime": "16:07",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "19:18",
+            "changeMinutes": null
+          },
+          {
+            "operatorName": "Mälartåg",
+            "trainNumber": "248",
+            "departureDate": "2026-07-06",
+            "departureTime": "20:28",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "21:14",
+            "changeMinutes": null
+          }
+        ]
+      },
+      "stockholm": null,
+      "cheapest": "direct",
+      "priceDifference": null
+    },
+    {
+      "id": "dcab8ae4-1f32-380c-8965-b313c5379880",
+      "direct": {
+        "id": "dcab8ae4-1f32-380c-8965-b313c5379880",
+        "departureTime": "16:18",
+        "arrivalTime": "21:14",
+        "arrivalDate": "2026-07-06",
+        "durationMinutes": 296,
+        "numberOfChanges": 1,
+        "totalTransferMinutes": 40,
+        "price": null,
+        "currency": "SEK",
+        "departureStatus": "NO_OFFERS",
+        "trainNumber": "306",
+        "operatorName": "Snälltåget tåg",
+        "brand": "Snälltåget tåg",
+        "legs": [
+          {
+            "operatorName": "Snälltåget tåg",
+            "trainNumber": "306",
+            "departureDate": "2026-07-06",
+            "departureTime": "16:18",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "19:48",
+            "changeMinutes": null
+          },
+          {
+            "operatorName": "Mälartåg",
+            "trainNumber": "248",
+            "departureDate": "2026-07-06",
+            "departureTime": "20:28",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "21:14",
+            "changeMinutes": null
+          }
+        ]
+      },
+      "stockholm": null,
+      "cheapest": "none",
+      "priceDifference": null
+    },
+    {
+      "id": "05ef29a9-308c-3604-ab65-39ee17d673af",
+      "direct": {
+        "id": "05ef29a9-308c-3604-ab65-39ee17d673af",
+        "departureTime": "18:07",
+        "arrivalTime": "22:14",
+        "arrivalDate": "2026-07-06",
+        "durationMinutes": 247,
+        "numberOfChanges": 1,
+        "totalTransferMinutes": 14,
+        "price": 2050,
+        "currency": "SEK",
+        "departureStatus": "PRICED",
+        "trainNumber": "548",
+        "operatorName": "SJ Snabbtåg",
+        "brand": "SJ Snabbtåg",
+        "legs": [
+          {
+            "operatorName": "SJ Snabbtåg",
+            "trainNumber": "548",
+            "departureDate": "2026-07-06",
+            "departureTime": "18:07",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "21:16",
+            "changeMinutes": null
+          },
+          {
+            "operatorName": "Mälartåg",
+            "trainNumber": "250",
+            "departureDate": "2026-07-06",
+            "departureTime": "21:30",
+            "arrivalDate": "2026-07-06",
+            "arrivalTime": "22:14",
+            "changeMinutes": null
+          }
+        ]
+      },
+      "stockholm": null,
+      "cheapest": "direct",
+      "priceDifference": null
+    },
+    {
+      "id": "8bde2bcd-3c82-31ca-8fd0-9cb9f3664f4c",
+      "direct": {
+        "id": "8bde2bcd-3c82-31ca-8fd0-9cb9f3664f4c",
+        "departureTime": "22:17",
+        "arrivalTime": "06:08",
+        "arrivalDate": "2026-07-07",
+        "durationMinutes": 471,
+        "numberOfChanges": 1,
+        "totalTransferMinutes": 64,
+        "price": 730,
+        "currency": "SEK",
+        "departureStatus": "PRICED",
+        "trainNumber": "2",
+        "operatorName": "SJ Nattåg",
+        "brand": "SJ Nattåg",
+        "legs": [
+          {
+            "operatorName": "SJ Nattåg",
+            "trainNumber": "2",
+            "departureDate": "2026-07-06",
+            "departureTime": "22:17",
+            "arrivalDate": "2026-07-07",
+            "arrivalTime": "04:22",
+            "changeMinutes": null
+          },
+          {
+            "operatorName": "Mälartåg",
+            "trainNumber": "218",
+            "departureDate": "2026-07-07",
+            "departureTime": "05:26",
+            "arrivalDate": "2026-07-07",
+            "arrivalTime": "06:08",
+            "changeMinutes": null
+          }
+        ]
+      },
+      "stockholm": null,
+      "cheapest": "direct",
+      "priceDifference": null
+    },
+    {
+      "id": "10d35c2d-5a72-35eb-a180-d625c221ccd0",
+      "direct": {
+        "id": "10d35c2d-5a72-35eb-a180-d625c221ccd0",
+        "departureTime": "22:45",
+        "arrivalTime": "09:45",
+        "arrivalDate": "2026-07-07",
+        "durationMinutes": 660,
+        "numberOfChanges": 2,
+        "totalTransferMinutes": 160,
+        "price": null,
+        "currency": "SEK",
+        "departureStatus": "SOLD_OUT",
+        "trainNumber": "675",
+        "operatorName": "Vy Bus4You Expressbuss",
+        "brand": "Vy Bus4You Expressbuss",
+        "legs": [
+          {
+            "operatorName": "Vy Bus4You Expressbuss",
+            "trainNumber": "675",
+            "departureDate": "2026-07-06",
+            "departureTime": "22:45",
+            "arrivalDate": "2026-07-07",
+            "arrivalTime": "02:10",
+            "changeMinutes": null
+          },
+          {
+            "operatorName": "SJ Snabbtåg",
+            "trainNumber": "400",
+            "departureDate": "2026-07-07",
+            "departureTime": "04:19",
+            "arrivalDate": "2026-07-07",
+            "arrivalTime": "08:32",
+            "changeMinutes": null
+          },
+          {
+            "operatorName": "Mälartåg",
+            "trainNumber": "225",
+            "departureDate": "2026-07-07",
+            "departureTime": "09:03",
+            "arrivalDate": "2026-07-07",
+            "arrivalTime": "09:45",
+            "changeMinutes": null
+          }
+        ]
+      },
+      "stockholm": null,
+      "cheapest": "none",
+      "priceDifference": null
+    }
+  ],
+  "cache": {
+    "status": "refreshed",
+    "cachedAt": "2026-07-05T22:44:43.578Z",
+    "refreshInProgress": false
+  }
+}SWEDEN_TIME_ZONE = "Europe/Stockholm";
 
 const STRATEGIES = {
   "malmo-nykoping": {
