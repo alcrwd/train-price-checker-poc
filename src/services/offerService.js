@@ -1,3 +1,5 @@
+let hasLoggedBedOfferDebug = false;
+
 function getDepartureStatuses(offersJson) {
   const statuses = offersJson?.departureStatus;
 
@@ -16,33 +18,66 @@ function getPrimaryDepartureStatus({ price, offersJson }) {
   return getDepartureStatuses(offersJson)[0];
 }
 
-function summarizeOfferBranches(offersJson) {
-  if (!offersJson) return null;
+function extractAmount(journeyPrices) {
+  const amount = journeyPrices?.price?.amount;
+  if (!amount) return null;
 
-  return {
-    topLevelKeys: Object.keys(offersJson),
+  const parsed = parseInt(amount, 10);
+  return Number.isNaN(parsed) ? null : parsed;
+}
 
-    departureStatus: offersJson.departureStatus || null,
+function summarizeSeatOffers(offersJson) {
+  const seatOffers = offersJson?.seatOffers?.offers || {};
+  const rows = [];
 
-    hasSeatOffers: Boolean(offersJson.seatOffers),
-    seatOfferKeys: offersJson.seatOffers
-      ? Object.keys(offersJson.seatOffers)
-      : [],
+  for (const [comfortKey, comfort] of Object.entries(seatOffers)) {
+    const flexibilities = comfort.flexibilities || {};
 
-    hasAccommodationOffers: Boolean(offersJson.accommodationOffers),
-    accommodationOfferKeys: offersJson.accommodationOffers
-      ? Object.keys(offersJson.accommodationOffers)
-      : [],
+    for (const [flexKey, flexibility] of Object.entries(flexibilities)) {
+      rows.push({
+        comfort: comfortKey,
+        flex: flexKey,
+        available: Boolean(flexibility.available),
+        price: extractAmount(flexibility.journeyPrices),
+      });
+    }
+  }
 
-    hasOffers: Boolean(offersJson.offers),
-    offerKeys: offersJson.offers
-      ? Object.keys(offersJson.offers)
-      : [],
-  };
+  return rows;
+}
+
+function summarizeBedOffers(offersJson) {
+  const bedOffers = offersJson?.bedOffers?.offers || {};
+  const rows = [];
+
+  for (const [bedTypeKey, bedType] of Object.entries(bedOffers)) {
+    const comfortTypes = bedType.comfortTypes || {};
+
+    for (const [comfortKey, comfort] of Object.entries(comfortTypes)) {
+      const flexibilities = comfort.flexibilities || {};
+
+      for (const [flexKey, flexibility] of Object.entries(flexibilities)) {
+        rows.push({
+          bedType: bedTypeKey,
+          comfort: comfortKey,
+          flex: flexKey,
+          available: Boolean(flexibility.available),
+          price: extractAmount(flexibility.journeyPrices),
+        });
+      }
+    }
+  }
+
+  return rows;
 }
 
 function writeMissingPriceDebug({ trip, offersJson }) {
-  console.log("\n================ MISSING PRICE DEBUG ================\n");
+  if (!offersJson?.bedOffers) return;
+  if (hasLoggedBedOfferDebug) return;
+
+  hasLoggedBedOfferDebug = true;
+
+  console.log("\n================ BED OFFER DEBUG ================\n");
 
   console.log(
     JSON.stringify(
@@ -53,16 +88,18 @@ function writeMissingPriceDebug({ trip, offersJson }) {
           arrivalTime: trip.arrivalTime,
           trainNumber: trip.trainNumber,
           operatorName: trip.operatorName,
+          departureStatus: trip.departureStatus,
         },
-        offerSummary: summarizeOfferBranches(offersJson),
-        offersJson,
+        departureStatus: getDepartureStatuses(offersJson),
+        seatOffers: summarizeSeatOffers(offersJson),
+        bedOffers: summarizeBedOffers(offersJson),
       },
       null,
       2
     )
   );
 
-  console.log("\n=====================================================\n");
+  console.log("\n=================================================\n");
 }
 
 function extractCheapestAvailablePrice(offersJson) {
@@ -76,17 +113,14 @@ function extractCheapestAvailablePrice(offersJson) {
     for (const flexibility of Object.values(flexibilities)) {
       if (!flexibility.available) continue;
 
-      const amount = flexibility.journeyPrices?.price?.amount;
-
+      const amount = extractAmount(flexibility.journeyPrices);
       if (!amount) continue;
 
-      prices.push(parseInt(amount, 10));
+      prices.push(amount);
     }
   }
 
-  if (prices.length === 0) {
-    return null;
-  }
+  if (prices.length === 0) return null;
 
   return Math.min(...prices);
 }
@@ -94,10 +128,7 @@ function extractCheapestAvailablePrice(offersJson) {
 function attachOffersToTrips(trips, offersByDepartureId) {
   return trips.map((trip) => {
     const offersJson = offersByDepartureId[trip.id];
-
-    const price = offersJson
-      ? extractCheapestAvailablePrice(offersJson)
-      : null;
+    const price = offersJson ? extractCheapestAvailablePrice(offersJson) : null;
 
     const departureStatus = getPrimaryDepartureStatus({
       price,
