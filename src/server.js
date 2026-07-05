@@ -3,9 +3,10 @@ const http = require("http");
 const { createComparisonResult } = require("./services/comparisonService");
 
 const PORT = process.env.PORT || 3000;
+const DEFAULT_DIRECTION = "malmo-nykoping";
 
-let comparisonCache = null;
-let refreshPromise = null;
+let comparisonCache = {};
+let refreshPromises = {};
 
 function sendJson(res, statusCode, data) {
   res.writeHead(statusCode, {
@@ -33,26 +34,44 @@ function getTodaySwedishDate() {
   return `${values.year}-${values.month}-${values.day}`;
 }
 
-async function refreshComparison({ travelDate }) {
-  if (refreshPromise) {
-    return refreshPromise;
+function getCacheKey({ direction, travelDate }) {
+  return `${direction}:${travelDate}`;
+}
+
+function getDirection(url) {
+  return url.searchParams.get("direction") || DEFAULT_DIRECTION;
+}
+
+function isUnsupportedDirectionError(error) {
+  return error?.message?.startsWith("Unsupported direction:");
+}
+
+async function refreshComparison({ direction, travelDate }) {
+  const cacheKey = getCacheKey({ direction, travelDate });
+
+  if (refreshPromises[cacheKey]) {
+    return refreshPromises[cacheKey];
   }
 
-  refreshPromise = createComparisonResult({ travelDate })
+  refreshPromises[cacheKey] = createComparisonResult({
+    direction,
+    travelDate,
+  })
     .then((result) => {
-      comparisonCache = {
+      comparisonCache[cacheKey] = {
         result,
         cachedAt: new Date().toISOString(),
+        direction,
         travelDate,
       };
 
-      return comparisonCache;
+      return comparisonCache[cacheKey];
     })
     .finally(() => {
-      refreshPromise = null;
+      delete refreshPromises[cacheKey];
     });
 
-  return refreshPromise;
+  return refreshPromises[cacheKey];
 }
 
 const server = http.createServer(async (req, res) => {
@@ -62,8 +81,8 @@ const server = http.createServer(async (req, res) => {
     sendJson(res, 200, {
       status: "ok",
       timestamp: new Date().toISOString(),
-      hasComparisonCache: Boolean(comparisonCache),
-      refreshInProgress: Boolean(refreshPromise),
+      cacheKeys: Object.keys(comparisonCache),
+      refreshInProgressKeys: Object.keys(refreshPromises),
     });
     return;
   }
@@ -72,31 +91,30 @@ const server = http.createServer(async (req, res) => {
     sendJson(res, 200, {
       name: "Train Price Checker API",
       status: "running",
-      hasComparisonCache: Boolean(comparisonCache),
+      cacheKeys: Object.keys(comparisonCache),
     });
     return;
   }
 
   if (req.method === "GET" && url.pathname === "/api/comparison") {
-    try {
-      const travelDate = url.searchParams.get("date") || getTodaySwedishDate();
+    const direction = getDirection(url);
+    const travelDate = url.searchParams.get("date") || getTodaySwedishDate();
+    const cacheKey = getCacheKey({ direction, travelDate });
 
-      if (
-        comparisonCache &&
-        comparisonCache.travelDate === travelDate
-      ) {
+    try {
+      if (comparisonCache[cacheKey]) {
         sendJson(res, 200, {
-          ...comparisonCache.result,
+          ...comparisonCache[cacheKey].result,
           cache: {
             status: "hit",
-            cachedAt: comparisonCache.cachedAt,
-            refreshInProgress: Boolean(refreshPromise),
+            cachedAt: comparisonCache[cacheKey].cachedAt,
+            refreshInProgress: Boolean(refreshPromises[cacheKey]),
           },
         });
         return;
       }
 
-      const cache = await refreshComparison({ travelDate });
+      const cache = await refreshComparison({ direction, travelDate });
 
       sendJson(res, 200, {
         ...cache.result,
@@ -109,12 +127,22 @@ const server = http.createServer(async (req, res) => {
     } catch (error) {
       console.error(error);
 
-      if (comparisonCache) {
+      if (isUnsupportedDirectionError(error)) {
+        sendJson(res, 400, {
+          error: "invalid_direction",
+          message: error.message,
+        });
+        return;
+      }
+
+      const fallbackCache = comparisonCache[cacheKey];
+
+      if (fallbackCache) {
         sendJson(res, 200, {
-          ...comparisonCache.result,
+          ...fallbackCache.result,
           cache: {
             status: "stale_after_error",
-            cachedAt: comparisonCache.cachedAt,
+            cachedAt: fallbackCache.cachedAt,
             refreshInProgress: false,
             error: error.message,
           },
@@ -132,9 +160,12 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === "GET" && url.pathname === "/api/comparison/refresh") {
+    const direction = getDirection(url);
+    const travelDate = url.searchParams.get("date") || getTodaySwedishDate();
+    const cacheKey = getCacheKey({ direction, travelDate });
+
     try {
-      const travelDate = url.searchParams.get("date") || getTodaySwedishDate();
-      const cache = await refreshComparison({ travelDate });
+      const cache = await refreshComparison({ direction, travelDate });
 
       sendJson(res, 200, {
         ...cache.result,
@@ -147,14 +178,23 @@ const server = http.createServer(async (req, res) => {
     } catch (error) {
       console.error(error);
 
+      if (isUnsupportedDirectionError(error)) {
+        sendJson(res, 400, {
+          error: "invalid_direction",
+          message: error.message,
+        });
+        return;
+      }
+
       sendJson(res, 500, {
         error: "comparison_refresh_failed",
         message: error.message,
-        cache: comparisonCache
+        cache: comparisonCache[cacheKey]
           ? {
               status: "stale_available",
-              cachedAt: comparisonCache.cachedAt,
-              travelDate: comparisonCache.travelDate,
+              cachedAt: comparisonCache[cacheKey].cachedAt,
+              travelDate: comparisonCache[cacheKey].travelDate,
+              direction: comparisonCache[cacheKey].direction,
             }
           : {
               status: "empty",
