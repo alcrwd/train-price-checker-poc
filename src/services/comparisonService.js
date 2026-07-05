@@ -1,10 +1,50 @@
 const { createDataset } = require("./datasetService");
-const {
-  findMatchingJourneyByFirstLeg,
-} = require("./trainMatcher");
 
-const STOCKHOLM_TO_NYKOPING_TRANSFER_PRICE = 98;
 const SWEDEN_TIME_ZONE = "Europe/Stockholm";
+
+const STRATEGIES = {
+  "malmo-nykoping": {
+    direction: "malmo-nykoping",
+    origin: "Malmö Central",
+    destination: "Nyköping Central",
+    via: "Stockholm Central",
+    comparison: {
+      origin: "Malmö Central",
+      destination: "Stockholm Central",
+    },
+    transferPrice: 98,
+    match: {
+      directLegIndex: 0,
+      comparisonLegIndex: 0,
+    },
+  },
+
+  "nykoping-malmo": {
+    direction: "nykoping-malmo",
+    origin: "Nyköping Central",
+    destination: "Malmö Central",
+    via: "Stockholm Central",
+    comparison: {
+      origin: "Stockholm Central",
+      destination: "Malmö Central",
+    },
+    transferPrice: 98,
+    match: {
+      directLegIndex: 1,
+      comparisonLegIndex: 0,
+    },
+  },
+};
+
+function getStrategy(direction = "malmo-nykoping") {
+  const strategy = STRATEGIES[direction];
+
+  if (!strategy) {
+    throw new Error(`Unsupported direction: ${direction}`);
+  }
+
+  return strategy;
+}
 
 function timeToMinutes(time) {
   if (!time) return null;
@@ -57,6 +97,8 @@ function mapLegForUi(leg) {
   return {
     operatorName: leg.operator || null,
     trainNumber: leg.trainNumber || null,
+    changeMinutes:
+      typeof leg.changeMinutes === "number" ? leg.changeMinutes : null,
   };
 }
 
@@ -81,56 +123,104 @@ function mapJourneyForUi(journey) {
   };
 }
 
-function getStockholmStrategyLegs({ standardJourney, stockholmJourney }) {
-  const sjLegs = stockholmJourney?.legs?.length
-    ? [stockholmJourney.legs[0]]
-    : [];
-
-  const transferLegs = (standardJourney.legs || []).slice(1);
-
-  return [...sjLegs, ...transferLegs].map(mapLegForUi);
+function normalizeText(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
 }
 
-function getCheapest({ directPrice, stockholmTotalPrice }) {
+function legsMatch(directLeg, comparisonLeg) {
+  if (!directLeg || !comparisonLeg) return false;
+
+  const directTrainNumber = normalizeText(directLeg.trainNumber);
+  const comparisonTrainNumber = normalizeText(comparisonLeg.trainNumber);
+
+  if (!directTrainNumber || !comparisonTrainNumber) return false;
+
+  return directTrainNumber === comparisonTrainNumber;
+}
+
+function findMatchingJourneyByStrategy(standardJourney, comparisonJourneys, strategy) {
+  const directLeg =
+    standardJourney.legs?.[strategy.match.directLegIndex];
+
+  return comparisonJourneys.find((comparisonJourney) => {
+    const comparisonLeg =
+      comparisonJourney.legs?.[strategy.match.comparisonLegIndex];
+
+    return legsMatch(directLeg, comparisonLeg);
+  });
+}
+
+function getStrategyLegs({ standardJourney, comparisonJourney, strategy }) {
+  if (!comparisonJourney) return [];
+
+  if (strategy.direction === "malmo-nykoping") {
+    const sjLegs = comparisonJourney.legs?.length
+      ? [comparisonJourney.legs[0]]
+      : [];
+
+    const transferLegs = (standardJourney.legs || []).slice(1);
+
+    return [...sjLegs, ...transferLegs].map(mapLegForUi);
+  }
+
+  if (strategy.direction === "nykoping-malmo") {
+    const transferLegs = (standardJourney.legs || []).slice(
+      0,
+      strategy.match.directLegIndex
+    );
+
+    const sjLegs = comparisonJourney.legs || [];
+
+    return [...transferLegs, ...sjLegs].map(mapLegForUi);
+  }
+
+  return (comparisonJourney.legs || []).map(mapLegForUi);
+}
+
+function getCheapest({ directPrice, strategyTotalPrice }) {
   const hasDirectPrice = typeof directPrice === "number";
-  const hasStockholmPrice = typeof stockholmTotalPrice === "number";
+  const hasStrategyPrice = typeof strategyTotalPrice === "number";
 
-  if (!hasDirectPrice && !hasStockholmPrice) return "none";
-  if (hasDirectPrice && !hasStockholmPrice) return "direct";
-  if (!hasDirectPrice && hasStockholmPrice) return "stockholm";
+  if (!hasDirectPrice && !hasStrategyPrice) return "none";
+  if (hasDirectPrice && !hasStrategyPrice) return "direct";
+  if (!hasDirectPrice && hasStrategyPrice) return "stockholm";
 
-  return directPrice <= stockholmTotalPrice ? "direct" : "stockholm";
+  return directPrice <= strategyTotalPrice ? "direct" : "stockholm";
 }
 
-function getPriceDifference({ directPrice, stockholmTotalPrice }) {
+function getPriceDifference({ directPrice, strategyTotalPrice }) {
   if (
     typeof directPrice !== "number" ||
-    typeof stockholmTotalPrice !== "number"
+    typeof strategyTotalPrice !== "number"
   ) {
     return null;
   }
 
-  return stockholmTotalPrice - directPrice;
+  return strategyTotalPrice - directPrice;
 }
 
 function createLovableEntriesForDate({
   travelDate,
   standardDataset,
-  stockholmDataset,
+  comparisonDataset,
+  strategy,
 }) {
   return standardDataset.journeys
     .filter((journey) =>
       shouldIncludeJourneyForCurrentSwedishTime(journey, travelDate)
     )
     .map((standardJourney) => {
-      const stockholmJourney = findMatchingJourneyByFirstLeg(
+      const comparisonJourney = findMatchingJourneyByStrategy(
         standardJourney,
-        stockholmDataset.journeys
+        comparisonDataset.journeys,
+        strategy
       );
 
-      const stockholmTotalPrice =
-        typeof stockholmJourney?.price === "number"
-          ? stockholmJourney.price + STOCKHOLM_TO_NYKOPING_TRANSFER_PRICE
+      const strategyTotalPrice =
+        typeof comparisonJourney?.price === "number"
+          ? comparisonJourney.price + strategy.transferPrice
           : null;
 
       const directPrice =
@@ -139,63 +229,71 @@ function createLovableEntriesForDate({
       return {
         id: standardJourney.id,
         direct: mapJourneyForUi(standardJourney),
-        stockholm: stockholmJourney
+        stockholm: comparisonJourney
           ? {
-              toStockholm: mapJourneyForUi(stockholmJourney),
+              toStockholm: mapJourneyForUi(comparisonJourney),
               stockholmPrice:
-                typeof stockholmJourney.price === "number"
-                  ? stockholmJourney.price
+                typeof comparisonJourney.price === "number"
+                  ? comparisonJourney.price
                   : null,
               malartagTransferSek:
-                typeof stockholmJourney.price === "number"
-                  ? STOCKHOLM_TO_NYKOPING_TRANSFER_PRICE
+                typeof comparisonJourney.price === "number"
+                  ? strategy.transferPrice
                   : null,
-              totalPrice: stockholmTotalPrice,
-              departureStatus: normalizeUiStatus(stockholmJourney),
-              legs: getStockholmStrategyLegs({
+              totalPrice: strategyTotalPrice,
+              departureStatus: normalizeUiStatus(comparisonJourney),
+              legs: getStrategyLegs({
                 standardJourney,
-                stockholmJourney,
+                comparisonJourney,
+                strategy,
               }),
             }
           : null,
         cheapest: getCheapest({
           directPrice,
-          stockholmTotalPrice,
+          strategyTotalPrice,
         }),
         priceDifference: getPriceDifference({
           directPrice,
-          stockholmTotalPrice,
+          strategyTotalPrice,
         }),
       };
     });
 }
 
-async function createComparisonResult({ travelDate }) {
+async function createComparisonResult({
+  travelDate,
+  direction = "malmo-nykoping",
+}) {
+  const strategy = getStrategy(direction);
+
   const standardDataset = await createDataset({
-    origin: "Malmö Central",
-    destination: "Nyköping Central",
+    origin: strategy.origin,
+    destination: strategy.destination,
     travelDate,
   });
 
-  const stockholmDataset = await createDataset({
-    origin: "Malmö Central",
-    destination: "Stockholm Central",
+  const comparisonDataset = await createDataset({
+    origin: strategy.comparison.origin,
+    destination: strategy.comparison.destination,
     travelDate,
   });
 
   return {
     generatedAt: new Date().toISOString(),
     search: {
-      origin: "Malmö Central",
-      destination: "Nyköping Central",
-      via: "Stockholm Central",
+      origin: strategy.origin,
+      destination: strategy.destination,
+      via: strategy.via,
       travelDate,
-      malartagTransferSek: STOCKHOLM_TO_NYKOPING_TRANSFER_PRICE,
+      malartagTransferSek: strategy.transferPrice,
+      direction: strategy.direction,
     },
     entries: createLovableEntriesForDate({
       travelDate,
       standardDataset,
-      stockholmDataset,
+      comparisonDataset,
+      strategy,
     }),
   };
 }
