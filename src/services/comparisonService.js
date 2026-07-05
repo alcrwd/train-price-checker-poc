@@ -139,7 +139,7 @@ function normalizeText(value) {
   return String(value || "").trim().toLowerCase();
 }
 
-function function legsMatch(directLeg, comparisonLeg) {
+function legsMatch(directLeg, comparisonLeg) {
   if (!directLeg || !comparisonLeg) return false;
 
   const directTrainNumber = normalizeText(directLeg.trainNumber);
