@@ -17,6 +17,7 @@ const STRATEGIES = {
       directLegIndex: 0,
       comparisonLegIndex: 0,
     },
+    includeNextDayComparison: false,
   },
 
   "nykoping-malmo": {
@@ -33,8 +34,15 @@ const STRATEGIES = {
       directLegIndex: 1,
       comparisonLegIndex: 0,
     },
+    includeNextDayComparison: true,
   },
 };
+
+function addDays(dateString, days) {
+  const date = new Date(`${dateString}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
 
 function getStrategy(direction = "malmo-nykoping") {
   const strategy = STRATEGIES[direction];
@@ -97,6 +105,10 @@ function mapLegForUi(leg) {
   return {
     operatorName: leg.operator || null,
     trainNumber: leg.trainNumber || null,
+    departureDate: leg.departureDate || null,
+    departureTime: leg.departureTime || null,
+    arrivalDate: leg.arrivalDate || null,
+    arrivalTime: leg.arrivalTime || null,
     changeMinutes:
       typeof leg.changeMinutes === "number" ? leg.changeMinutes : null,
   };
@@ -124,9 +136,7 @@ function mapJourneyForUi(journey) {
 }
 
 function normalizeText(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase();
+  return String(value || "").trim().toLowerCase();
 }
 
 function legsMatch(directLeg, comparisonLeg) {
@@ -140,9 +150,12 @@ function legsMatch(directLeg, comparisonLeg) {
   return directTrainNumber === comparisonTrainNumber;
 }
 
-function findMatchingJourneyByStrategy(standardJourney, comparisonJourneys, strategy) {
-  const directLeg =
-    standardJourney.legs?.[strategy.match.directLegIndex];
+function findMatchingJourneyByStrategy(
+  standardJourney,
+  comparisonJourneys,
+  strategy
+) {
+  const directLeg = standardJourney.legs?.[strategy.match.directLegIndex];
 
   return comparisonJourneys.find((comparisonJourney) => {
     const comparisonLeg =
@@ -199,6 +212,42 @@ function getPriceDifference({ directPrice, strategyTotalPrice }) {
   }
 
   return strategyTotalPrice - directPrice;
+}
+
+function mergeComparisonDatasets(datasets) {
+  const journeysById = new Map();
+
+  for (const dataset of datasets) {
+    for (const journey of dataset.journeys || []) {
+      journeysById.set(journey.id, journey);
+    }
+  }
+
+  return {
+    generatedAt: new Date().toISOString(),
+    search: datasets[0]?.search || null,
+    journeys: Array.from(journeysById.values()),
+  };
+}
+
+async function createComparisonDataset({ strategy, travelDate }) {
+  const primaryDataset = await createDataset({
+    origin: strategy.comparison.origin,
+    destination: strategy.comparison.destination,
+    travelDate,
+  });
+
+  if (!strategy.includeNextDayComparison) {
+    return primaryDataset;
+  }
+
+  const nextDayDataset = await createDataset({
+    origin: strategy.comparison.origin,
+    destination: strategy.comparison.destination,
+    travelDate: addDays(travelDate, 1),
+  });
+
+  return mergeComparisonDatasets([primaryDataset, nextDayDataset]);
 }
 
 function createLovableEntriesForDate({
@@ -273,9 +322,8 @@ async function createComparisonResult({
     travelDate,
   });
 
-  const comparisonDataset = await createDataset({
-    origin: strategy.comparison.origin,
-    destination: strategy.comparison.destination,
+  const comparisonDataset = await createComparisonDataset({
+    strategy,
     travelDate,
   });
 
