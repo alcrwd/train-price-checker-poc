@@ -57,12 +57,6 @@ async function getOffers(page, { apiHeaders, departures, passengerListId }) {
     });
 
     offersByDepartureId[departureId] = result;
-
-    console.log(
-      `Offer ${departure.departureDateTime?.slice(11, 16)} ${departureId}: ${
-        result.status
-      }`
-    );
   }
 
   return offersByDepartureId;
