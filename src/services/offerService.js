@@ -37,28 +37,67 @@ function getDebugFilePath(departureStatuses) {
 
 function writeDebugFile(filePath, payload) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
-
   fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), "utf8");
+}
+
+function summarizeOfferBranches(offersJson) {
+  if (!offersJson) return null;
+
+  return {
+    topLevelKeys: Object.keys(offersJson),
+
+    departureStatus: offersJson.departureStatus || null,
+
+    hasSeatOffers: Boolean(offersJson.seatOffers),
+    seatOfferKeys: offersJson.seatOffers
+      ? Object.keys(offersJson.seatOffers)
+      : [],
+
+    hasAccommodationOffers: Boolean(offersJson.accommodationOffers),
+    accommodationOfferKeys: offersJson.accommodationOffers
+      ? Object.keys(offersJson.accommodationOffers)
+      : [],
+
+    hasOffers: Boolean(offersJson.offers),
+    offerKeys: offersJson.offers ? Object.keys(offersJson.offers) : [],
+
+    hasComfortOffers: Boolean(offersJson.comfortOffers),
+    comfortOfferKeys: offersJson.comfortOffers
+      ? Object.keys(offersJson.comfortOffers)
+      : [],
+
+    hasAvailableOffers: Boolean(offersJson.availableOffers),
+    availableOfferKeys: offersJson.availableOffers
+      ? Object.keys(offersJson.availableOffers)
+      : [],
+  };
 }
 
 function writeMissingPriceDebug({ trip, offersJson }) {
   const departureStatuses = getDepartureStatuses(offersJson);
-  const statusKey = departureStatuses.join("|");
+  const statusKey = `${trip.trainNumber || "unknown"}|${trip.departureTime || "unknown"}|${departureStatuses.join("|")}`;
 
   if (writtenDebugStatuses.has(statusKey)) {
     return;
   }
 
-  const filePath = getDebugFilePath(departureStatuses);
+  const filePath = getDebugFilePath([
+    trip.trainNumber || "unknown-train",
+    trip.departureTime || "unknown-time",
+    ...departureStatuses,
+  ]);
 
   writeDebugFile(filePath, {
-    reason: "departure-status",
+    reason: "missing-seat-price",
     departureStatus: departureStatuses,
     trip,
+    offerSummary: summarizeOfferBranches(offersJson),
     offersJson: offersJson || null,
   });
 
-  console.log(`Saved debug response: ${statusKey}`);
+  console.log(
+    `Saved missing-price debug: train=${trip.trainNumber || "unknown"} departure=${trip.departureTime || "unknown"} status=${departureStatuses.join("|")}`
+  );
 
   writtenDebugStatuses.add(statusKey);
 }
