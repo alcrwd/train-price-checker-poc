@@ -139,15 +139,31 @@ function normalizeText(value) {
   return String(value || "").trim().toLowerCase();
 }
 
-function legsMatch(directLeg, comparisonLeg) {
+function function legsMatch(directLeg, comparisonLeg) {
   if (!directLeg || !comparisonLeg) return false;
 
   const directTrainNumber = normalizeText(directLeg.trainNumber);
   const comparisonTrainNumber = normalizeText(comparisonLeg.trainNumber);
 
   if (!directTrainNumber || !comparisonTrainNumber) return false;
+  if (directTrainNumber !== comparisonTrainNumber) return false;
 
-  return directTrainNumber === comparisonTrainNumber;
+  const directOperator = normalizeText(directLeg.operator);
+  const comparisonOperator = normalizeText(comparisonLeg.operator);
+
+  if (directOperator && comparisonOperator && directOperator !== comparisonOperator) {
+    return false;
+  }
+
+  if (
+    directLeg.arrivalTime &&
+    comparisonLeg.arrivalTime &&
+    directLeg.arrivalTime !== comparisonLeg.arrivalTime
+  ) {
+    return false;
+  }
+
+  return true;
 }
 
 function findMatchingJourneyByStrategy(
