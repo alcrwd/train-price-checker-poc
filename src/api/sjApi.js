@@ -4,6 +4,7 @@ const { createClient } = require("../lib/sj/client");
 const STATION_IDS = {
   "Malmö Central": "740000003",
   "Stockholm Central": "740000001",
+  "Södertälje Syd": "740000055",
   "Norrköping Central": "740000007",
   "Nyköping Central": "740000050",
 };
