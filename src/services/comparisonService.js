@@ -5,6 +5,22 @@ const SWEDEN_TIME_ZONE = "Europe/Stockholm";
 const BOOKING_HUBS = {
   "malmo-nykoping": [
     {
+      id: "stockholm",
+      label: "Stockholm",
+      station: "Stockholm Central",
+      transferCostSek: 98,
+      comparison: {
+        origin: "Malmö Central",
+        destination: "Stockholm Central",
+      },
+      match: {
+        directLegIndex: 0,
+        comparisonLegIndex: 0,
+      },
+      includeNextDayComparison: false,
+      requireArrivalTimeMatch: false,
+    },
+    {
       id: "sodertalje-syd",
       label: "Södertälje",
       station: "Södertälje Syd",
