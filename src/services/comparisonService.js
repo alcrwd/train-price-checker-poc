@@ -20,22 +20,6 @@ const BOOKING_HUBS = {
       includeNextDayComparison: false,
       requireArrivalTimeMatch: false,
     },
-    {
-      id: "sodertalje-syd",
-      label: "Södertälje",
-      station: "Södertälje Syd",
-      transferCostSek: 0,
-      comparison: {
-        origin: "Malmö Central",
-        destination: "Södertälje Syd",
-      },
-      match: {
-        directLegIndex: 0,
-        comparisonLegIndex: 0,
-      },
-      includeNextDayComparison: false,
-      requireArrivalTimeMatch: false,
-    },
   ],
 
   "nykoping-malmo": [
