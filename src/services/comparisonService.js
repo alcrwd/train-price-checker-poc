@@ -2,22 +2,85 @@ const { createDataset } = require("./datasetService");
 
 const SWEDEN_TIME_ZONE = "Europe/Stockholm";
 
+const BOOKING_HUBS = {
+  "malmo-nykoping": [
+    {
+      id: "stockholm",
+      label: "Stockholm",
+      station: "Stockholm Central",
+      transferCostSek: 98,
+      comparison: {
+        origin: "Malmö Central",
+        destination: "Stockholm Central",
+      },
+      match: {
+        directLegIndex: 0,
+        comparisonLegIndex: 0,
+      },
+      includeNextDayComparison: false,
+      requireArrivalTimeMatch: false,
+    },
+    {
+      id: "sodertalje-syd",
+      label: "Södertälje",
+      station: "Södertälje Syd",
+      transferCostSek: 0,
+      comparison: {
+        origin: "Malmö Central",
+        destination: "Södertälje Syd",
+      },
+      match: {
+        directLegIndex: 0,
+        comparisonLegIndex: 0,
+      },
+      includeNextDayComparison: false,
+      requireArrivalTimeMatch: false,
+    },
+  ],
+
+  "nykoping-malmo": [
+    {
+      id: "stockholm",
+      label: "Stockholm",
+      station: "Stockholm Central",
+      transferCostSek: 98,
+      comparison: {
+        origin: "Stockholm Central",
+        destination: "Malmö Central",
+      },
+      match: {
+        directLegIndex: 1,
+        comparisonLegIndex: 0,
+      },
+      includeNextDayComparison: true,
+      requireArrivalTimeMatch: true,
+    },
+    {
+      id: "sodertalje-syd",
+      label: "Södertälje",
+      station: "Södertälje Syd",
+      transferCostSek: 0,
+      comparison: {
+        origin: "Södertälje Syd",
+        destination: "Malmö Central",
+      },
+      match: {
+        directLegIndex: 1,
+        comparisonLegIndex: 0,
+      },
+      includeNextDayComparison: true,
+      requireArrivalTimeMatch: true,
+    },
+  ],
+};
+
 const STRATEGIES = {
   "malmo-nykoping": {
     direction: "malmo-nykoping",
     origin: "Malmö Central",
     destination: "Nyköping Central",
     via: "Stockholm Central",
-    comparison: {
-      origin: "Malmö Central",
-      destination: "Stockholm Central",
-    },
-    transferPrice: 98,
-    match: {
-      directLegIndex: 0,
-      comparisonLegIndex: 0,
-    },
-    includeNextDayComparison: false,
+    bookingHubs: BOOKING_HUBS["malmo-nykoping"],
   },
 
   "nykoping-malmo": {
@@ -25,16 +88,7 @@ const STRATEGIES = {
     origin: "Nyköping Central",
     destination: "Malmö Central",
     via: "Stockholm Central",
-    comparison: {
-      origin: "Stockholm Central",
-      destination: "Malmö Central",
-    },
-    transferPrice: 98,
-    match: {
-      directLegIndex: 1,
-      comparisonLegIndex: 0,
-    },
-    includeNextDayComparison: true,
+    bookingHubs: BOOKING_HUBS["nykoping-malmo"],
   },
 };
 
@@ -133,7 +187,7 @@ function normalizeText(value) {
   return String(value || "").trim().toLowerCase();
 }
 
-function legsMatch(directLeg, comparisonLeg, strategy) {
+function legsMatch(directLeg, comparisonLeg, hub) {
   if (!directLeg || !comparisonLeg) return false;
 
   const directTrainNumber = normalizeText(directLeg.trainNumber);
@@ -154,7 +208,7 @@ function legsMatch(directLeg, comparisonLeg, strategy) {
   }
 
   if (
-    strategy.direction === "nykoping-malmo" &&
+    hub.requireArrivalTimeMatch &&
     directLeg.arrivalTime &&
     comparisonLeg.arrivalTime &&
     directLeg.arrivalTime !== comparisonLeg.arrivalTime
@@ -165,25 +219,19 @@ function legsMatch(directLeg, comparisonLeg, strategy) {
   return true;
 }
 
-function findMatchingJourneyByStrategy(
-  standardJourney,
-  comparisonJourneys,
-  strategy
-) {
-  const directLeg = standardJourney.legs?.[strategy.match.directLegIndex];
+function findMatchingJourneyByHub(standardJourney, comparisonJourneys, hub) {
+  const directLeg = standardJourney.legs?.[hub.match.directLegIndex];
 
   return comparisonJourneys.find((comparisonJourney) => {
-    const comparisonLeg =
-      comparisonJourney.legs?.[strategy.match.comparisonLegIndex];
-
-    return legsMatch(directLeg, comparisonLeg, strategy);
+    const comparisonLeg = comparisonJourney.legs?.[hub.match.comparisonLegIndex];
+    return legsMatch(directLeg, comparisonLeg, hub);
   });
 }
 
-function getStrategyLegs({ standardJourney, comparisonJourney, strategy }) {
+function getAlternativeLegs({ standardJourney, comparisonJourney, hub, direction }) {
   if (!comparisonJourney) return [];
 
-  if (strategy.direction === "malmo-nykoping") {
+  if (direction === "malmo-nykoping") {
     const sjLegs = comparisonJourney.legs?.length
       ? [comparisonJourney.legs[0]]
       : [];
@@ -193,10 +241,10 @@ function getStrategyLegs({ standardJourney, comparisonJourney, strategy }) {
     return [...sjLegs, ...transferLegs].map(mapLegForUi);
   }
 
-  if (strategy.direction === "nykoping-malmo") {
+  if (direction === "nykoping-malmo") {
     const transferLegs = (standardJourney.legs || []).slice(
       0,
-      strategy.match.directLegIndex
+      hub.match.directLegIndex
     );
 
     const sjLegs = comparisonJourney.legs || [];
@@ -207,26 +255,26 @@ function getStrategyLegs({ standardJourney, comparisonJourney, strategy }) {
   return (comparisonJourney.legs || []).map(mapLegForUi);
 }
 
-function getCheapest({ directPrice, strategyTotalPrice }) {
+function getCheapest({ directPrice, bestAlternativeTotalPrice }) {
   const hasDirectPrice = typeof directPrice === "number";
-  const hasStrategyPrice = typeof strategyTotalPrice === "number";
+  const hasAlternativePrice = typeof bestAlternativeTotalPrice === "number";
 
-  if (!hasDirectPrice && !hasStrategyPrice) return "none";
-  if (hasDirectPrice && !hasStrategyPrice) return "direct";
-  if (!hasDirectPrice && hasStrategyPrice) return "stockholm";
+  if (!hasDirectPrice && !hasAlternativePrice) return "none";
+  if (hasDirectPrice && !hasAlternativePrice) return "direct";
+  if (!hasDirectPrice && hasAlternativePrice) return "alternative";
 
-  return directPrice <= strategyTotalPrice ? "direct" : "stockholm";
+  return directPrice <= bestAlternativeTotalPrice ? "direct" : "alternative";
 }
 
-function getPriceDifference({ directPrice, strategyTotalPrice }) {
+function getPriceDifference({ directPrice, alternativeTotalPrice }) {
   if (
     typeof directPrice !== "number" ||
-    typeof strategyTotalPrice !== "number"
+    typeof alternativeTotalPrice !== "number"
   ) {
     return null;
   }
 
-  return strategyTotalPrice - directPrice;
+  return alternativeTotalPrice - directPrice;
 }
 
 function mergeComparisonDatasets(datasets) {
@@ -245,30 +293,123 @@ function mergeComparisonDatasets(datasets) {
   };
 }
 
-async function createComparisonDataset({ strategy, travelDate }) {
+async function createComparisonDatasetForHub({ hub, travelDate }) {
   const primaryDataset = await createDataset({
-    origin: strategy.comparison.origin,
-    destination: strategy.comparison.destination,
+    origin: hub.comparison.origin,
+    destination: hub.comparison.destination,
     travelDate,
   });
 
-  if (!strategy.includeNextDayComparison) {
+  if (!hub.includeNextDayComparison) {
     return primaryDataset;
   }
 
   const nextDayDataset = await createDataset({
-    origin: strategy.comparison.origin,
-    destination: strategy.comparison.destination,
+    origin: hub.comparison.origin,
+    destination: hub.comparison.destination,
     travelDate: addDays(travelDate, 1),
   });
 
   return mergeComparisonDatasets([primaryDataset, nextDayDataset]);
 }
 
+async function createComparisonDatasetsByHub({ strategy, travelDate }) {
+  const datasetsByHubId = {};
+
+  for (const hub of strategy.bookingHubs) {
+    datasetsByHubId[hub.id] = await createComparisonDatasetForHub({
+      hub,
+      travelDate,
+    });
+  }
+
+  return datasetsByHubId;
+}
+
+function createAlternativeForHub({
+  standardJourney,
+  comparisonDataset,
+  hub,
+  direction,
+  directPrice,
+}) {
+  const comparisonJourney = findMatchingJourneyByHub(
+    standardJourney,
+    comparisonDataset.journeys,
+    hub
+  );
+
+  const sjPrice =
+    typeof comparisonJourney?.price === "number" ? comparisonJourney.price : null;
+
+  const totalPrice =
+    typeof sjPrice === "number" ? sjPrice + hub.transferCostSek : null;
+
+  return {
+    id: hub.id,
+    label: hub.label,
+    station: hub.station,
+    sjPrice,
+    transferCostSek: typeof sjPrice === "number" ? hub.transferCostSek : null,
+    totalPrice,
+    status: comparisonJourney ? normalizeUiStatus(comparisonJourney) : "NO_OFFERS",
+    priceDifference: getPriceDifference({
+      directPrice,
+      alternativeTotalPrice: totalPrice,
+    }),
+    journey: comparisonJourney ? mapJourneyForUi(comparisonJourney) : null,
+    legs: comparisonJourney
+      ? getAlternativeLegs({
+          standardJourney,
+          comparisonJourney,
+          hub,
+          direction,
+        })
+      : [],
+  };
+}
+
+function getBestAlternative(alternatives) {
+  const pricedAlternatives = alternatives.filter(
+    (alternative) => typeof alternative.totalPrice === "number"
+  );
+
+  if (pricedAlternatives.length === 0) return null;
+
+  return pricedAlternatives.reduce((best, current) =>
+    current.totalPrice < best.totalPrice ? current : best
+  );
+}
+
+function getFallbackAlternative(alternatives) {
+  if (!alternatives.length) return null;
+
+  const soldOut = alternatives.find((alternative) => alternative.status === "SOLD_OUT");
+  if (soldOut) return soldOut;
+
+  return alternatives[0];
+}
+
+function mapAlternativeToLegacyStockholm(alternative) {
+  if (!alternative) return null;
+
+  return {
+    toStockholm: alternative.journey,
+    stockholmPrice: alternative.sjPrice,
+    malartagTransferSek: alternative.transferCostSek,
+    totalPrice: alternative.totalPrice,
+    departureStatus: alternative.status,
+    legs: alternative.legs,
+    hubId: alternative.id,
+    label: alternative.label,
+    station: alternative.station,
+  };
+}
+
 function createLovableEntriesForDate({
   travelDate,
   standardDataset,
-  comparisonDataset,
+  comparisonDatasetsByHub,
   strategy,
 }) {
   return standardDataset.journeys
@@ -276,50 +417,46 @@ function createLovableEntriesForDate({
       shouldIncludeJourneyForCurrentSwedishTime(journey, travelDate)
     )
     .map((standardJourney) => {
-      const comparisonJourney = findMatchingJourneyByStrategy(
-        standardJourney,
-        comparisonDataset.journeys,
-        strategy
-      );
-
-      const strategyTotalPrice =
-        typeof comparisonJourney?.price === "number"
-          ? comparisonJourney.price + strategy.transferPrice
-          : null;
-
       const directPrice =
         typeof standardJourney.price === "number" ? standardJourney.price : null;
+
+      const alternatives = strategy.bookingHubs.map((hub) =>
+        createAlternativeForHub({
+          standardJourney,
+          comparisonDataset: comparisonDatasetsByHub[hub.id],
+          hub,
+          direction: strategy.direction,
+          directPrice,
+        })
+      );
+
+      const bestAlternative = getBestAlternative(alternatives);
+      const displayAlternative = bestAlternative || getFallbackAlternative(alternatives);
+
+      const cheapest = getCheapest({
+        directPrice,
+        bestAlternativeTotalPrice: bestAlternative?.totalPrice ?? null,
+      });
 
       return {
         id: standardJourney.id,
         direct: mapJourneyForUi(standardJourney),
-        stockholm: comparisonJourney
-          ? {
-              toStockholm: mapJourneyForUi(comparisonJourney),
-              stockholmPrice:
-                typeof comparisonJourney.price === "number"
-                  ? comparisonJourney.price
-                  : null,
-              malartagTransferSek:
-                typeof comparisonJourney.price === "number"
-                  ? strategy.transferPrice
-                  : null,
-              totalPrice: strategyTotalPrice,
-              departureStatus: normalizeUiStatus(comparisonJourney),
-              legs: getStrategyLegs({
-                standardJourney,
-                comparisonJourney,
-                strategy,
-              }),
-            }
-          : null,
-        cheapest: getCheapest({
-          directPrice,
-          strategyTotalPrice,
-        }),
+
+        alternatives,
+        bestAlternativeId: bestAlternative?.id || null,
+        bestAlternativeLabel: bestAlternative?.label || null,
+
+        // Legacy field kept so the existing frontend does not break yet.
+        stockholm: mapAlternativeToLegacyStockholm(displayAlternative),
+
+        cheapest:
+          cheapest === "alternative"
+            ? displayAlternative?.id || "stockholm"
+            : cheapest,
+
         priceDifference: getPriceDifference({
           directPrice,
-          strategyTotalPrice,
+          alternativeTotalPrice: bestAlternative?.totalPrice ?? null,
         }),
       };
     });
@@ -337,7 +474,7 @@ async function createComparisonResult({
     travelDate,
   });
 
-  const comparisonDataset = await createComparisonDataset({
+  const comparisonDatasetsByHub = await createComparisonDatasetsByHub({
     strategy,
     travelDate,
   });
@@ -349,13 +486,19 @@ async function createComparisonResult({
       destination: strategy.destination,
       via: strategy.via,
       travelDate,
-      malartagTransferSek: strategy.transferPrice,
+      malartagTransferSek: 98,
       direction: strategy.direction,
+      bookingHubs: strategy.bookingHubs.map((hub) => ({
+        id: hub.id,
+        label: hub.label,
+        station: hub.station,
+        transferCostSek: hub.transferCostSek,
+      })),
     },
     entries: createLovableEntriesForDate({
       travelDate,
       standardDataset,
-      comparisonDataset,
+      comparisonDatasetsByHub,
       strategy,
     }),
   };
