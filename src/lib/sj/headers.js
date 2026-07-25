@@ -178,12 +178,14 @@ async function captureApiHeaders(page, { fromStation, toStation, date }) {
           combinedText.includes(term)
         );
 
-        console.error("[SJ timeout diagnostic]", {
-          ...diagnostic,
-          possibleBlockTerms,
-          recentRequests,
-          recentResponses,
-        });
+        console.error(
+  `[SJ timeout diagnostic] ${JSON.stringify({
+    ...diagnostic,
+    possibleBlockTerms,
+    recentRequests,
+    recentResponses,
+  })}`
+);
 
         try {
           await page.screenshot({
